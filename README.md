@@ -26,3 +26,6 @@ Parses all roll call votes for the current Congress and outputs one JSON file pe
 python3 ./process_votes_by_member.py
 ```
 All outputs are stored in the generated ```data/``` folder
+
+## Acknowledgments
+Special thanks to the [unitedstates/congress](https://github.com/unitedstates/congress) project for providing the House and Senate roll call vote scrapers that make this project possible. 
