@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 
 # Path to the congress repo data directory
-CONGRESS_DATA_DIR = Path("data/119/votes/2025")
+CONGRESS_DATA_DIR = Path("data")
 
 def fetch_bill_status(bill_id: str, congress: str):
     # Use regex to ensure exact matches
@@ -55,35 +55,52 @@ def generate_bill_jsons():
 def get_bills():
     seen_bills = set()
 
-    # Iterate through each vote folder under 2025
-    for folder in CONGRESS_DATA_DIR.iterdir():
-        if not folder.is_dir():
+    # Example path to roll call data: data/{congress}/votes/{year}
+    for congress in CONGRESS_DATA_DIR.iterdir():
+        if not congress.is_dir():
+            continue  
+
+        votes_dir = congress / "votes"
+        if not votes_dir.exists():
+            print(f"WARNING: No votes folder in {congress}")
             continue
 
-        data_file = folder / "data.json"
-        if not data_file.exists():
-            continue
+        # Iterate through each vote folder by year
+        for year in votes_dir.iterdir():
+            if not year.is_dir():
+                continue
 
-        with open(data_file, "r") as f:
-            vote_data = json.load(f)
-        
-        # Filter out non-bill votes (votes for quorum or leadership)
-        if (bill := vote_data.get("bill", {})) == {}:
-            continue
+            # Iterate through all roll call vote folders in year
+            for folder in year.iterdir():
+                if not folder.is_dir():
+                    continue
 
-        # Build filter string
-        bill_id = build_bill_id(bill)
+                data_file = folder / "data.json"
+                if not data_file.exists():
+                    continue
 
-        # Don't fetch duplicates
-        if bill_id in seen_bills:
-            continue
+                with open(data_file, "r") as f:
+                    vote_data = json.load(f)
+                
+                # Filter out non-bill votes (votes for quorum or leadership)
+                if (bill := vote_data.get("bill", {})) == {}:
+                    continue
 
-        print(f"Fetching bill status for {bill_id}")
+                # Build filter string
+                bill_id = build_bill_id(bill)
 
-        # Call govinfo downloader
-        fetch_bill_status(bill_id, bill["congress"])
+                # Don't fetch duplicates
+                if bill_id in seen_bills:
+                    continue
 
-        seen_bills.add(bill_id)
+                print(f"Fetching bill status for {bill_id}")
+
+                # Call govinfo downloader
+                fetch_bill_status(bill_id, bill["congress"])
+
+                seen_bills.add(bill_id)
+    
+    # Generate data.json files for all bill xml data pulled
     generate_bill_jsons()
 
 
