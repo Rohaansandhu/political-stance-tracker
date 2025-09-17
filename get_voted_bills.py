@@ -7,7 +7,7 @@ from pathlib import Path
 CONGRESS_DATA_DIR = Path("data/119/votes/2025")
 
 def fetch_bill_status(bill_id: str, congress: str):
-    # filter regex
+    # Use regex to ensure exact matches
     bill_id_regex = f"^{bill_id}$"
 
     # Build the command as a list of arguments
@@ -35,6 +35,21 @@ def build_bill_id(bill: dict) -> str:
     number = bill["number"]
     btype = bill["type"].lower()  # ensure lowercase
     return f"BILLSTATUS-{congress}{btype}{number}"
+
+def generate_bill_jsons():
+    """ Generate the data.json for every bill xml data pulled """
+
+    # Create command
+    cmd = [
+        "usc-run",
+        "bills"
+    ]
+
+    try:
+        # Run the command
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print("Command failed:", e)
 
 
 def get_bills():
@@ -69,6 +84,7 @@ def get_bills():
         fetch_bill_status(bill_id, bill["congress"])
 
         seen_bills.add(bill_id)
+    generate_bill_jsons()
 
 
 if __name__ == "__main__":
