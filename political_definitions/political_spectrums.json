@@ -1,0 +1,60 @@
+{
+  "political_spectrums": [
+    {
+      "name": "Government Role",
+      "left_side": "More Regulation / Government Intervention",
+      "left_description": "Expanded government programs, stronger regulatory oversight.",
+      "right_side": "Deregulation / Limited Government",
+      "right_description": "Reduce government programs, rely on market forces."
+    },
+    {
+      "name": "Economic Policy",
+      "left_side": "Progressive / Redistributionist",
+      "left_description": "Higher taxes on wealth, social welfare, market intervention.",
+      "right_side": "Free Market / Laissez-Faire",
+      "right_description": "Lower taxes, minimal intervention, prioritize growth."
+    },
+    {
+      "name": "Social Policy",
+      "left_side": "Progressive / Liberal",
+      "left_description": "Expanding civil rights, inclusive social change.",
+      "right_side": "Traditional / Conservative",
+      "right_description": "Preserving cultural traditions, slow change."
+    },
+    {
+      "name": "Foreign Policy",
+      "left_side": "Internationalist / Interventionist",
+      "left_description": "Active participation in alliances, global leadership.",
+      "right_side": "Isolationist / Restraint",
+      "right_description": "Focus on domestic issues, avoid foreign entanglements."
+    },
+    {
+      "name": "Federalism",
+      "left_side": "Centralized Power",
+      "left_description": "Stronger federal authority, nationwide standards.",
+      "right_side": "Decentralized Power",
+      "right_description": "More authority to states and local governments."
+    },
+    {
+      "name": "Civil Liberties vs Security",
+      "left_side": "Privacy & Civil Liberties Priority",
+      "left_description": "Strong protections for individual rights, limited surveillance.",
+      "right_side": "Security & Law-and-Order Priority",
+      "right_description": "Expanded policing, surveillance, prioritize safety."
+    },
+    {
+      "name": "Populism vs Elitism",
+      "left_side": "Populist / Anti-Establishment",
+      "left_description": "Empower ordinary people, distrust elites.",
+      "right_side": "Institutional / Technocratic",
+      "right_description": "Rely on expertise, centralized institutions."
+    },
+    {
+      "name": "Environmental Spectrum",
+      "left_side": "Pro-Climate Action",
+      "left_description": "Aggressive emissions targets, strong environmental protections.",
+      "right_side": "Pro-Industry / Minimal Regulation",
+      "right_description": "Prioritize economic growth, minimize regulatory burdens."
+    }
+  ]
+}

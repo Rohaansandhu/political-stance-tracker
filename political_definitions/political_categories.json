@@ -1,0 +1,105 @@
+{
+  "political_categories": [
+    {
+      "name": "Economy & Finance",
+      "description": "Policies affecting taxation, government spending, trade, business regulation, and employment.",
+      "subcategories": [
+        { "name": "Taxes", "description": "Income, corporate, and wealth tax policy." },
+        { "name": "Spending & Budget", "description": "Government appropriations and fiscal priorities." },
+        { "name": "Trade", "description": "Tariffs, free trade agreements, import/export policy." },
+        { "name": "Business Regulation", "description": "Antitrust, banking, financial sector regulation." },
+        { "name": "Labor & Employment", "description": "Worker protections, unions, minimum wage laws." }
+      ]
+    },
+    {
+      "name": "Healthcare",
+      "description": "Healthcare coverage, costs, public health, and regulation.",
+      "subcategories": [
+        { "name": "Coverage Models", "description": "Universal healthcare vs private insurance systems." },
+        { "name": "Costs & Access", "description": "Drug pricing, insurance affordability, billing transparency." },
+        { "name": "Public Health", "description": "Pandemic response, vaccinations, community health programs." }
+      ]
+    },
+    {
+      "name": "Education",
+      "description": "Policies governing schools, universities, and student support.",
+      "subcategories": [
+        { "name": "K-12 Education", "description": "Funding, curriculum standards, teacher pay." },
+        { "name": "Higher Education", "description": "Student loans, tuition, public university funding." },
+        { "name": "School Choice", "description": "Charter schools, vouchers, homeschooling policy." }
+      ]
+    },
+    {
+      "name": "Social Issues",
+      "description": "Civil rights, immigration, criminal justice, and family policy.",
+      "subcategories": [
+        { "name": "Civil Rights", "description": "Anti-discrimination laws, voting rights protections." },
+        { "name": "Immigration", "description": "Border policy, pathways to citizenship, asylum." },
+        { "name": "Criminal Justice", "description": "Police reform, sentencing, prison system funding." },
+        { "name": "Family & Culture", "description": "Marriage policy, gender and reproductive rights." }
+      ]
+    },
+    {
+      "name": "Environment & Energy",
+      "description": "Natural resource policy, energy production, climate change response.",
+      "subcategories": [
+        { "name": "Climate Policy", "description": "Emissions limits, carbon pricing, green incentives." },
+        { "name": "Energy Production", "description": "Fossil fuels, nuclear power, renewable energy." },
+        { "name": "Conservation", "description": "Public lands, wildlife, pollution control." }
+      ]
+    },
+    {
+      "name": "Defense & Foreign Policy",
+      "description": "Military, alliances, war powers, and global diplomacy.",
+      "subcategories": [
+        { "name": "Military Spending", "description": "Defense budgets, troop levels, weapons programs." },
+        { "name": "Foreign Relations", "description": "Treaties, alliances, international aid." },
+        { "name": "Security & Intelligence", "description": "Cybersecurity, surveillance, intelligence operations." }
+      ]
+    },
+    {
+      "name": "Technology & Innovation",
+      "description": "Regulation of digital platforms, privacy, and emerging tech.",
+      "subcategories": [
+        { "name": "Data Privacy", "description": "User data protection, surveillance limits." },
+        { "name": "Tech Regulation", "description": "Big Tech antitrust, online content moderation." },
+        { "name": "Emerging Tech", "description": "AI, biotech, intellectual property rights." }
+      ]
+    },
+    {
+      "name": "Infrastructure & Transportation",
+      "description": "Development of physical and digital infrastructure.",
+      "subcategories": [
+        { "name": "Transportation", "description": "Roads, transit systems, aviation, maritime." },
+        { "name": "Digital Infrastructure", "description": "Broadband expansion, rural connectivity." },
+        { "name": "Housing & Urban Planning", "description": "Affordable housing, zoning laws, urban renewal." }
+      ]
+    },
+    {
+      "name": "Government & Institutional Reform",
+      "description": "Rules and systems shaping governance and elections.",
+      "subcategories": [
+        { "name": "Electoral Law", "description": "Voting rights, redistricting, election security." },
+        { "name": "Campaign Finance", "description": "Political donations, PACs, transparency rules." },
+        { "name": "Judicial & Institutional Reform", "description": "Court reform, ethics oversight, bureaucracy efficiency." }
+      ]
+    },
+    {
+      "name": "Agriculture & Rural Issues",
+      "description": "Policies affecting farmers, food safety, and rural economies.",
+      "subcategories": [
+        { "name": "Farm Policy", "description": "Subsidies, crop insurance, agribusiness regulation." },
+        { "name": "Food Safety", "description": "Labeling, inspection, GMO policy." },
+        { "name": "Rural Development", "description": "Infrastructure, healthcare, broadband for rural areas." }
+      ]
+    },
+    {
+      "name": "Budget & Appropriations",
+      "description": "Overall fiscal planning, debt, and major spending bills.",
+      "subcategories": [
+        { "name": "Debt & Deficit", "description": "Debt ceiling, deficit reduction measures." },
+        { "name": "Appropriations", "description": "Omnibus spending bills, continuing resolutions." }
+      ]
+    }
+  ]
+}
