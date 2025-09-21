@@ -55,6 +55,55 @@
       "left_description": "Aggressive emissions targets, strong environmental protections.",
       "right_side": "Pro-Industry / Minimal Regulation",
       "right_description": "Prioritize economic growth, minimize regulatory burdens."
+    },
+    {
+      "name": "Cultural Policy",
+      "left_side": "Multicultural / Pluralist",
+      "left_description": "Celebrate diversity, support immigration, secularism.",
+      "right_side": "Nationalist / Homogeneous",
+      "right_description": "Prioritize national identity, cultural cohesion, tradition."
+    },
+    {
+      "name": "Economic Globalization",
+      "left_side": "Pro-Globalization",
+      "left_description": "Free trade, open markets, global economic integration.",
+      "right_side": "Protectionist / Economic Nationalist",
+      "right_description": "Tariffs, onshoring, protect domestic industries."
+    },
+    {
+      "name": "Corporate Power",
+      "left_side": "Anti-Corporate / Cooperative",
+      "left_description": "Support small businesses, co-ops, regulate big corporations.",
+      "right_side": "Pro-Business / Corporate Friendly",
+      "right_description": "Reduce restrictions on large businesses, corporate incentives."
+    },
+    {
+      "name": "Progress vs Tradition",
+      "left_side": "Modernist / Secular",
+      "left_description": "Adapt institutions to reflect current values, science-driven policy.",
+      "right_side": "Traditionalist / Religious",
+      "right_description": "Policies guided by faith, preserve historical norms."
+    },
+    {
+      "name": "Tech & Privacy",
+      "left_side": "Tech-Skeptical / Privacy-First",
+      "left_description": "Strict limits on AI, facial recognition, big data usage.",
+      "right_side": "Tech-Optimistic / Innovation-First",
+      "right_description": "Rapid adoption of new tech, minimal barriers to innovation."
+    },
+    {
+      "name": "Individualism vs Collectivism",
+      "left_side": "Collectivist / Communitarian",
+      "left_description": "Emphasize shared responsibility, public goods, community solutions.",
+      "right_side": "Individualist / Libertarian",
+      "right_description": "Personal responsibility, voluntary solutions, minimal state."
+    },
+    {
+      "name": "Democracy vs Authoritarianism",
+      "left_side": "Democratic / Participatory",
+      "left_description": "Transparency, free press, citizen participation.",
+      "right_side": "Authoritarian / Majoritarian",
+      "right_description": "Strong executive power, limited dissent, order over process."
     }
   ]
 }

@@ -32,8 +32,8 @@ Be objective and consider multiple political perspectives.
 
 bill_text = ""
 
-# TODO: Determine which free model to use: openai/gpt-oss-120b:free, nvidia/nemotron-nano-9b-v2:free, deepseek/deepseek-chat-v3.1:free
-# Leaning toward gpt-oss since it is open source
+# TODO: Determine which free model to use: openai/gpt-oss-120b:free, nvidia/nemotron-nano-9b-v2:free, deepseek/deepseek-chat-v3.1:free, google/gemma-3n-e2b-it:free
+# Leaning toward gpt-oss since it is open source and not multi-modal like gemma
 
 completion = client.chat.completions.create(
     extra_body={},

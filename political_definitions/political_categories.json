@@ -8,7 +8,9 @@
         { "name": "Spending & Budget", "description": "Government appropriations and fiscal priorities." },
         { "name": "Trade", "description": "Tariffs, free trade agreements, import/export policy." },
         { "name": "Business Regulation", "description": "Antitrust, banking, financial sector regulation." },
-        { "name": "Labor & Employment", "description": "Worker protections, unions, minimum wage laws." }
+        { "name": "Labor & Employment", "description": "Worker protections, unions, minimum wage laws." },
+        { "name": "Monetary Policy", "description": "Interest rates, inflation control, central bank policy." },
+        { "name": "Financial Markets", "description": "Securities regulation, crypto, Wall Street oversight." }
       ]
     },
     {
@@ -17,7 +19,9 @@
       "subcategories": [
         { "name": "Coverage Models", "description": "Universal healthcare vs private insurance systems." },
         { "name": "Costs & Access", "description": "Drug pricing, insurance affordability, billing transparency." },
-        { "name": "Public Health", "description": "Pandemic response, vaccinations, community health programs." }
+        { "name": "Public Health", "description": "Pandemic response, vaccinations, community health programs." },
+        { "name": "Mental Health", "description": "Funding, parity laws, suicide prevention." },
+        { "name": "Reproductive Health", "description": "Abortion policy, contraception access, maternal care." }
       ]
     },
     {
@@ -26,7 +30,9 @@
       "subcategories": [
         { "name": "K-12 Education", "description": "Funding, curriculum standards, teacher pay." },
         { "name": "Higher Education", "description": "Student loans, tuition, public university funding." },
-        { "name": "School Choice", "description": "Charter schools, vouchers, homeschooling policy." }
+        { "name": "School Choice", "description": "Charter schools, vouchers, homeschooling policy." },
+        { "name": "Education Equity", "description": "Special education, closing achievement gaps." },
+        { "name": "STEM & Workforce Training", "description": "Science, tech, engineering education, vocational programs." }
       ]
     },
     {
@@ -36,7 +42,9 @@
         { "name": "Civil Rights", "description": "Anti-discrimination laws, voting rights protections." },
         { "name": "Immigration", "description": "Border policy, pathways to citizenship, asylum." },
         { "name": "Criminal Justice", "description": "Police reform, sentencing, prison system funding." },
-        { "name": "Family & Culture", "description": "Marriage policy, gender and reproductive rights." }
+        { "name": "Family & Culture", "description": "Marriage policy, gender and reproductive rights." },
+        { "name": "Drug Policy", "description": "Legalization, decriminalization, controlled substances." },
+        { "name": "Privacy & Civil Liberties", "description": "Surveillance, individual rights, government overreach." }
       ]
     },
     {
@@ -45,7 +53,9 @@
       "subcategories": [
         { "name": "Climate Policy", "description": "Emissions limits, carbon pricing, green incentives." },
         { "name": "Energy Production", "description": "Fossil fuels, nuclear power, renewable energy." },
-        { "name": "Conservation", "description": "Public lands, wildlife, pollution control." }
+        { "name": "Conservation", "description": "Public lands, wildlife, pollution control." },
+        { "name": "Environmental Justice", "description": "Equity in pollution exposure, protecting vulnerable communities." },
+        { "name": "Water Policy", "description": "Clean water access, drought response, water rights." }
       ]
     },
     {
@@ -54,7 +64,8 @@
       "subcategories": [
         { "name": "Military Spending", "description": "Defense budgets, troop levels, weapons programs." },
         { "name": "Foreign Relations", "description": "Treaties, alliances, international aid." },
-        { "name": "Security & Intelligence", "description": "Cybersecurity, surveillance, intelligence operations." }
+        { "name": "Security & Intelligence", "description": "Cybersecurity, surveillance, intelligence operations." },
+        { "name": "Veterans Affairs", "description": "VA funding, healthcare, benefits for veterans." }
       ]
     },
     {
@@ -63,7 +74,9 @@
       "subcategories": [
         { "name": "Data Privacy", "description": "User data protection, surveillance limits." },
         { "name": "Tech Regulation", "description": "Big Tech antitrust, online content moderation." },
-        { "name": "Emerging Tech", "description": "AI, biotech, intellectual property rights." }
+        { "name": "Emerging Tech", "description": "AI, biotech, intellectual property rights." },
+        { "name": "Cybersecurity", "description": "Critical infrastructure protection, ransomware response." },
+        { "name": "Digital Speech & Misinformation", "description": "Free speech vs moderation, disinformation campaigns." }
       ]
     },
     {
@@ -72,7 +85,8 @@
       "subcategories": [
         { "name": "Transportation", "description": "Roads, transit systems, aviation, maritime." },
         { "name": "Digital Infrastructure", "description": "Broadband expansion, rural connectivity." },
-        { "name": "Housing & Urban Planning", "description": "Affordable housing, zoning laws, urban renewal." }
+        { "name": "Housing & Urban Planning", "description": "Affordable housing, zoning laws, urban renewal." },
+        { "name": "Public Works & Utilities", "description": "Water systems, electricity grid, waste management." }
       ]
     },
     {
@@ -81,7 +95,8 @@
       "subcategories": [
         { "name": "Electoral Law", "description": "Voting rights, redistricting, election security." },
         { "name": "Campaign Finance", "description": "Political donations, PACs, transparency rules." },
-        { "name": "Judicial & Institutional Reform", "description": "Court reform, ethics oversight, bureaucracy efficiency." }
+        { "name": "Judicial & Institutional Reform", "description": "Court reform, ethics oversight, bureaucracy efficiency." },
+        { "name": "Transparency & Anti-Corruption", "description": "Whistleblower protections, anti-bribery laws." }
       ]
     },
     {
@@ -99,6 +114,30 @@
       "subcategories": [
         { "name": "Debt & Deficit", "description": "Debt ceiling, deficit reduction measures." },
         { "name": "Appropriations", "description": "Omnibus spending bills, continuing resolutions." }
+      ]
+    },
+    {
+      "name": "Science & Space",
+      "description": "Policies advancing research, exploration, and innovation.",
+      "subcategories": [
+        { "name": "Space Policy", "description": "NASA programs, private space industry regulation." },
+        { "name": "Research & Development", "description": "Federal R&D funding, innovation initiatives." }
+      ]
+    },
+    {
+      "name": "Disaster & Emergency Management",
+      "description": "Preparedness, response, and recovery from disasters.",
+      "subcategories": [
+        { "name": "Natural Disasters", "description": "Hurricane, wildfire, earthquake response." },
+        { "name": "Emergency Preparedness", "description": "FEMA programs, public warning systems." }
+      ]
+    },
+    {
+      "name": "Tribal & Indigenous Affairs",
+      "description": "Policy related to Native American tribes and sovereignty.",
+      "subcategories": [
+        { "name": "Tribal Sovereignty", "description": "Self-governance, treaty rights." },
+        { "name": "Economic & Cultural Policy", "description": "Resource rights, cultural preservation." }
       ]
     }
   ]
