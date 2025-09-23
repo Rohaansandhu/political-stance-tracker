@@ -32,6 +32,12 @@ def generate_bill_analyses():
                 if not data_file.exists():
                     continue
 
+                # Check if the file exists already (skip if so)
+                bill_analysis_file = folder / "bill_analysis.json"
+                if bill_analysis_file.exists():
+                    print(f"{folder.name} has existing analysis")
+                    continue
+
                 with open(data_file, "r") as f:
                     bill_data = json.load(f)
 
