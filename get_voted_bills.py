@@ -1,4 +1,4 @@
-import os
+import argparse
 import json
 import subprocess
 from pathlib import Path
@@ -36,7 +36,7 @@ def build_bill_id(bill: dict) -> str:
     btype = bill["type"].lower()  # ensure lowercase
     return f"BILLSTATUS-{congress}{btype}{number}"
 
-def generate_bill_jsons():
+def generate_bill_jsons(force=False):
     """ Generate the data.json for every bill xml data pulled """
 
     # Create command
@@ -45,6 +45,10 @@ def generate_bill_jsons():
         "bills"
     ]
 
+    # Forces re-parsing of all data
+    if force:
+        cmd.append("--force")
+
     try:
         # Run the command
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -52,7 +56,7 @@ def generate_bill_jsons():
         print("Command failed:", e)
 
 
-def get_bills():
+def get_bills(force=False):
     seen_bills = set()
 
     # Example path to roll call data: data/{congress}/votes/{year}
@@ -101,8 +105,17 @@ def get_bills():
                 seen_bills.add(bill_id)
     
     # Generate data.json files for all bill xml data pulled
-    generate_bill_jsons()
+    if force:
+        generate_bill_jsons(True)
+    else:
+        generate_bill_jsons(False)
+
 
 
 if __name__ == "__main__":
-    get_bills()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true", help="Force re-download")
+
+    args = parser.parse_args()
+
+    get_bills(args.force)
