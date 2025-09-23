@@ -1,4 +1,6 @@
 import argparse
+import datetime
+import re
 import json
 import subprocess
 from pathlib import Path
@@ -6,9 +8,20 @@ from pathlib import Path
 # Path to the congress repo data directory
 CONGRESS_DATA_DIR = Path("data")
 
+def mark_bill_as_voted(folder_location):
+    """
+    Mark a bill as voted by adding a txt file.
+    Check if a bill is voted on, by checking the existence of this file
+    in the bills folder
+    """
+    file_path = folder_location / "voted_bill.txt"
+    with open(file_path, "w") as f:
+        f.write(f"processed: {datetime.datetime.now(datetime.timezone.utc).isoformat()}Z")
+
+
 def fetch_bill_status(bill_id: str, congress: str):
     # Use regex to ensure exact matches
-    bill_id_regex = f"^{bill_id}$"
+    bill_id_regex = re.escape(bill_id) + r"\.xml$"
 
     # Build the command as a list of arguments
     cmd = [
@@ -22,8 +35,10 @@ def fetch_bill_status(bill_id: str, congress: str):
     try:
         # Run the command
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return True
     except subprocess.CalledProcessError as e:
         print("Command failed:", e)
+        return False
 
 def build_bill_id(bill: dict) -> str:
     """
@@ -99,8 +114,26 @@ def get_bills(force=False):
 
                 print(f"Fetching bill status for {bill_id}")
 
-                # Call govinfo downloader
-                fetch_bill_status(bill_id, bill["congress"])
+                # Call govinfo downloader (returns True upon success)
+                result = fetch_bill_status(bill_id, bill["congress"])
+
+                # Mark bill as voted if fetch bill status finished with no errors
+                if result:
+                    # Construct bill folder file path and handle errors
+                    congress_dir = congress / "bills" 
+                    if not congress_dir.is_dir(): 
+                        print(f"WARNING: No bills folder in {congress}") 
+                        continue 
+                    bill_type_dir = congress_dir / bill["type"].lower() 
+                    if not bill_type_dir.is_dir(): 
+                        print(f"WARNING: No bill type folder in {bill_id}") 
+                        continue 
+                    bill_dir = bill_type_dir / (bill["type"].lower() + str(bill["number"])) 
+                    if not bill_dir.is_dir(): 
+                        print(f"WARNING: No specific bill folder in {bill_id}") 
+                        continue
+
+                    mark_bill_as_voted(bill_dir)
 
                 seen_bills.add(bill_id)
     
