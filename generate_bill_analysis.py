@@ -32,6 +32,11 @@ def generate_bill_analyses():
                 if not data_file.exists():
                     continue
 
+                # Check if the bill was voted on
+                is_voted = folder / "voted_bill.txt"
+                if not is_voted.exists():
+                    continue
+
                 # Check if the file exists already (skip if so)
                 bill_analysis_file = folder / "bill_analysis.json"
                 if bill_analysis_file.exists():
@@ -52,6 +57,7 @@ def generate_bill_analyses():
                     continue
 
                 # Call LLM Client
+                # Using grok for now, because gpt-oss was not working
                 bill_analysis = bill_analysis_client.analyze_bill(summart_text, model="x-ai/grok-4-fast:free")
 
                 # Write analysis to folder
