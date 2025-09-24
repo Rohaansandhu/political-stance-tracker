@@ -80,21 +80,32 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
                         {bill_text}
 
                         Please provide:
-                        1. Classify the bill into one or more relevant political categories and subcategories.
+                        1. Classify the bill into one or more relevant political categories and subcategories. 
+                           Determine the impact on each relevant category using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
                         2. Rate the bill on any relevant political spectrums. Use a scale of -1 to +1, where:
                             - -1 = fully aligned with the left/progressive side
                             - 0 = neutral or mixed
                             - +1 = fully aligned with the right/conservative side
                         3. If a spectrum is **not relevant**, omit it from the output.
                         4. Analysis of what a YES vote represents politically
-                        5. Analysis of what a NO vote represents politically  
+                        5. Analysis of what a NO vote represents politically 
+                        6. The estimated impact of the bill (how important it is) 
 
                         Output Format (STRICT JSON)
                         {{
                             "political_categories": {{
-                                "primary": "string",
-                                "secondary": ["array", "of", "strings"],
-                                "subcategories": ["array", "of", "specific", "subcategories"]
+                                "primary": {{
+                                "name": "string",
+                                "impact_score": 0.0 to 1.0
+                                }},
+                                "secondary": [{{
+                                "name": "string",
+                                "impact_score": 0.0 to 1.0
+                                }}],
+                                "subcategories": [{{
+                                "name": "string",
+                                "impact_score": 0.0 to 1.0
+                                }}]
                             }},
                             "political_spectrums": {{
                                 "spectrum_name": {{

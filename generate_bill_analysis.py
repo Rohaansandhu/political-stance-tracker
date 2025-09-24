@@ -1,3 +1,5 @@
+import argparse
+import time
 import json
 from pathlib import Path
 import bill_analysis_client
@@ -5,8 +7,9 @@ import bill_analysis_client
 # Path to the congress repo data directory
 CONGRESS_DATA_DIR = Path("data")
 
-def generate_bill_analyses():
+def generate_bill_analyses(force=False):
     generated_bills = set()
+    start_time = time.perf_counter()
 
     # Example path to roll call data: data/{congress}/bills/{bill_type}
     for congress in CONGRESS_DATA_DIR.iterdir():
@@ -37,9 +40,9 @@ def generate_bill_analyses():
                 if not is_voted.exists():
                     continue
 
-                # Check if the file exists already (skip if so)
+                # Check if the file exists already unless force = True
                 bill_analysis_file = folder / "bill_analysis.json"
-                if bill_analysis_file.exists():
+                if bill_analysis_file.exists() and not force:
                     print(f"{folder.name} has existing analysis")
                     continue
 
@@ -67,9 +70,15 @@ def generate_bill_analyses():
                 
                 generated_bills.add(folder.name)
                 print(f"{folder.name} bill analysis generated")
+    end_time = time.perf_counter()
+    print(f"Elapsed time: {start_time - end_time} seconds")
 
     return generated_bills
 
 if __name__ == "__main__":
-    bill_count = generate_bill_analyses()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true", help="Force re-download")
+
+    args = parser.parse_args()
+    bill_count = generate_bill_analyses(args.force)
     print(f"Total bill analyses generated: {len(bill_count)}")
