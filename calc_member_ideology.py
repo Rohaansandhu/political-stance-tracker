@@ -28,8 +28,10 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
     """
 
     # Initialize score accumulators
-    spectrum_scores = defaultdict(list)  # Store individual scores for averaging
-    category_scores = defaultdict(list)  # Store category-specific votes
+    spectrum_scores = defaultdict(list) 
+    primary_category_scores = defaultdict(list)
+    secondary_category_scores = defaultdict(list)
+    subcategory_scores = defaultdict(list)
 
     # Process each vote
     for vote_record in legislator_votes:
@@ -75,7 +77,7 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
                 # Only process if there's a clear alignment
                 if category_alignment != 0:  
                     weighted_alignment = category_alignment * impact_score
-                    category_scores[category_name].append(weighted_alignment)
+                    primary_category_scores[category_name].append(weighted_alignment)
         
         secondary_categories = political_categories.get("secondary", [])
         for secondary_category in secondary_categories:
@@ -87,7 +89,7 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
                     category_alignment = determine_category_alignment(vote_value, voting_analysis)
                     if category_alignment != 0:
                         weighted_alignment = category_alignment * impact_score
-                        category_scores[category_name].append(weighted_alignment)
+                        secondary_category_scores[category_name].append(weighted_alignment)
 
         subcategories = political_categories.get("subcategories", [])
         for subcategory in subcategories:
@@ -99,7 +101,7 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
                     category_alignment = determine_category_alignment(vote_value, voting_analysis)
                     if category_alignment != 0:
                         weighted_alignment = category_alignment * impact_score
-                        category_scores[category_name].append(weighted_alignment)
+                        subcategory_scores[category_name].append(weighted_alignment)
 
     # Calculate final scores
     final_spectrum_scores = {}
@@ -108,15 +110,27 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
             final_spectrum_scores[spectrum_name] = round(sum(scores) / len(scores), 3)
 
     # Calculate category classifications
-    final_categories = {}
-    for category, alignments in category_scores.items():
+    primary_final = {}
+    for category, alignments in primary_category_scores.items():
         if alignments:
             avg_score = sum(alignments) / len(alignments)
-            final_categories[category] = avg_score
+            primary_final[category] = avg_score
+    secondary_final = {}
+    for category, alignments in secondary_category_scores.items():
+        if alignments:
+            avg_score = sum(alignments) / len(alignments)
+            secondary_final[category] = avg_score
+    subcategory_final = {}
+    for category, alignments in subcategory_scores.items():
+        if alignments:
+            avg_score = sum(alignments) / len(alignments)
+            subcategory_final[category] = avg_score
 
     return {
         "spectrum_scores": final_spectrum_scores,
-        "category_classifications": final_categories,
+        "primary_category_classifications": primary_final,
+        "secondary_category_classifications": secondary_final,
+        "subcategory_classifications": subcategory_final,
         "vote_count": len(
             [
                 v
@@ -204,7 +218,9 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
         "party": legislator_info.get("party"),
         "state": legislator_info.get("state"),
         "scores": standard_scores,
-        "categories": ideology_data["category_classifications"],
+        "primary_categories": ideology_data["primary_category_classifications"],
+        "secondary_categories": ideology_data["secondary_category_classifications"],
+        "subcategories": ideology_data["subcategory_classifications"],
         "detailed_spectrums": ideology_data["spectrum_scores"],
         "vote_count": ideology_data["vote_count"],
     }
