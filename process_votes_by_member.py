@@ -96,21 +96,11 @@ def process_votes():
                             "vote": vote
                         })
 
-    # Store the amount of votes per member in a separate document
-    num_of_votes = {}
-
     # Write out JSON per member
     for member_id, data in member_votes.items():
         out_file = OUTPUT_DIR / f"{member_id}.json"
         with open(out_file, "w") as f:
             json.dump(data, f, indent=2)
-        
-        # Store the amount of votes per member in a separate document
-        num_of_votes[member_id] = len(data.get("votes"))
-    
-    out_file = OUTPUT_DIR / "vote_count_by_member.json"
-    with open(out_file, "w") as f:
-        json.dump(num_of_votes, f, indent=2)
 
     print(f"Created {len(member_votes)} member JSON files in {OUTPUT_DIR}")
 
