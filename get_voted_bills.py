@@ -105,6 +105,11 @@ def get_bills(force=False):
                 if (bill := vote_data.get("bill", {})) == {}:
                     continue
 
+                # Ignore hres, sres, hconres, sconres
+                # These are simple and concurrent resolutions that have no lawful power
+                if bill.get("type") not in ["hr", "hjres", "s", "sjres"]:
+                    continue
+
                 # Build filter string
                 bill_id = build_bill_id(bill)
 

@@ -336,6 +336,11 @@ def load_bill_analyses():
             if not bill_type_folder.is_dir():
                 continue
 
+            # Ignore hres, sres, hconres, sconres
+            # These are simple and concurrent resolutions that have no lawful power
+            if bill_type_folder.name not in ["hr", "hjres", "s", "sjres"]:
+                continue
+
             # Iterate through all individual bill folders
             for folder in bill_type_folder.iterdir():
                 if not folder.is_dir():
