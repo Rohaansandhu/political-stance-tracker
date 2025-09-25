@@ -14,7 +14,7 @@ def check_schema_version(bill_analysis_file):
             existing_analysis = json.load(f)
         
         # Check if schema_version exists and matches current version
-        existing_version = existing_analysis.get("schema_version", "1.0")  # Default to 1.0 for old analyses
+        existing_version = existing_analysis.get("schema_version")
         return existing_version == bill_analysis_client.SCHEMA_VERSION
     
     except (json.JSONDecodeError, KeyError, FileNotFoundError):
