@@ -3,141 +3,449 @@
     {
       "name": "Economy & Finance",
       "description": "Policies affecting taxation, government spending, trade, business regulation, and employment.",
+      "conservative_view": "Free market capitalism with minimal government interference, lower taxes, reduced regulation, fiscal responsibility, and competition-driven growth.",
+      "liberal_view": "Government regulation to ensure fairness, progressive taxation, social safety nets, worker protections, and addressing income inequality.",
       "subcategories": [
-        { "name": "Taxes", "description": "Income, corporate, and wealth tax policy." },
-        { "name": "Spending & Budget", "description": "Government appropriations and fiscal priorities." },
-        { "name": "Trade", "description": "Tariffs, free trade agreements, import/export policy." },
-        { "name": "Business Regulation", "description": "Antitrust, banking, financial sector regulation." },
-        { "name": "Labor & Employment", "description": "Worker protections, unions, minimum wage laws." },
-        { "name": "Monetary Policy", "description": "Interest rates, inflation control, central bank policy." },
-        { "name": "Financial Markets", "description": "Securities regulation, crypto, Wall Street oversight." }
+        { 
+          "name": "Taxes", 
+          "description": "Income, corporate, and wealth tax policy.",
+          "conservative_view": "Lower taxes stimulate economic growth, reduce government size, and allow individuals to keep more of their earnings.",
+          "liberal_view": "Progressive taxation funds public services, reduces inequality, and ensures wealthy pay fair share for societal benefits."
+        },
+        { 
+          "name": "Spending & Budget", 
+          "description": "Government appropriations and fiscal priorities.",
+          "conservative_view": "Balanced budgets, reduced government spending, elimination of waste, and prioritizing essential functions only.",
+          "liberal_view": "Strategic government investment in infrastructure, education, healthcare, and social programs drives long-term prosperity."
+        },
+        { 
+          "name": "Trade", 
+          "description": "Tariffs, free trade agreements, import/export policy.",
+          "conservative_view": "Free trade increases prosperity through competition and efficiency, though some support protecting domestic industries.",
+          "liberal_view": "Trade policies should protect workers, environment, and human rights, not just maximize corporate profits."
+        },
+        { 
+          "name": "Business Regulation", 
+          "description": "Antitrust, banking, financial sector regulation.",
+          "conservative_view": "Minimal regulation allows innovation and competition to drive efficiency and consumer benefits naturally.",
+          "liberal_view": "Strong regulation prevents abuse, protects consumers, ensures fair competition, and prevents systemic risks."
+        },
+        { 
+          "name": "Labor & Employment", 
+          "description": "Worker protections, unions, minimum wage laws.",
+          "conservative_view": "Market forces should determine wages and working conditions; excessive regulation hurts job creation and competitiveness.",
+          "liberal_view": "Worker protections, union rights, and living wages are essential for dignity, fairness, and economic stability."
+        },
+        { 
+          "name": "Monetary Policy", 
+          "description": "Interest rates, inflation control, central bank policy.",
+          "conservative_view": "Sound money, price stability, and limited central bank intervention protect savers and encourage investment.",
+          "liberal_view": "Monetary policy should support full employment, economic stimulus during downturns, and financial stability."
+        },
+        { 
+          "name": "Financial Markets", 
+          "description": "Securities regulation, crypto, Wall Street oversight.",
+          "conservative_view": "Light-touch regulation promotes innovation, capital formation, and efficient allocation of resources through markets.",
+          "liberal_view": "Strong oversight prevents fraud, systemic risk, and ensures markets serve broader economic goals, not just profits."
+        }
       ]
     },
     {
       "name": "Healthcare",
       "description": "Healthcare coverage, costs, public health, and regulation.",
+      "conservative_view": "Market-based solutions, personal responsibility, choice in coverage, and competition to drive down costs and improve quality.",
+      "liberal_view": "Healthcare as a human right requiring universal access, government role in ensuring affordability, and public health prioritization.",
       "subcategories": [
-        { "name": "Coverage Models", "description": "Universal healthcare vs private insurance systems." },
-        { "name": "Costs & Access", "description": "Drug pricing, insurance affordability, billing transparency." },
-        { "name": "Public Health", "description": "Pandemic response, vaccinations, community health programs." },
-        { "name": "Mental Health", "description": "Funding, parity laws, suicide prevention." },
-        { "name": "Reproductive Health", "description": "Abortion policy, contraception access, maternal care." }
+        { 
+          "name": "Coverage Models", 
+          "description": "Universal healthcare vs private insurance systems.",
+          "conservative_view": "Private insurance and market competition provide better quality, choice, and efficiency than government-run systems.",
+          "liberal_view": "Universal healthcare ensures everyone gets care regardless of ability to pay, reducing costs through collective bargaining."
+        },
+        { 
+          "name": "Costs & Access", 
+          "description": "Drug pricing, insurance affordability, billing transparency.",
+          "conservative_view": "Market competition and price transparency will naturally reduce costs; government price controls stifle innovation.",
+          "liberal_view": "Government intervention needed to control excessive pricing and ensure healthcare affordability for all."
+        },
+        { 
+          "name": "Public Health", 
+          "description": "Pandemic response, vaccinations, community health programs.",
+          "conservative_view": "Individual choice and personal responsibility in health decisions; limited government mandates respect personal freedom.",
+          "liberal_view": "Collective action and government coordination necessary to protect public health and prevent disease outbreaks."
+        },
+        { 
+          "name": "Mental Health", 
+          "description": "Funding, parity laws, suicide prevention.",
+          "conservative_view": "Community-based solutions, family support, and private sector innovation address mental health more effectively than government programs.",
+          "liberal_view": "Government funding and insurance parity ensure mental health treatment is accessible and not stigmatized."
+        },
+        { 
+          "name": "Reproductive Health", 
+          "description": "Abortion policy, contraception access, maternal care.",
+          "conservative_view": "Protection of unborn life, parental rights, religious freedom, and traditional family values guide reproductive policy.",
+          "liberal_view": "Women's bodily autonomy, reproductive choice, comprehensive sex education, and access to family planning services."
+        }
       ]
     },
     {
       "name": "Education",
       "description": "Policies governing schools, universities, and student support.",
+      "conservative_view": "School choice, parental rights, local control, merit-based advancement, and traditional educational values and curriculum.",
+      "liberal_view": "Equitable public education funding, inclusive curriculum, teacher support, and addressing systemic educational inequalities.",
       "subcategories": [
-        { "name": "K-12 Education", "description": "Funding, curriculum standards, teacher pay." },
-        { "name": "Higher Education", "description": "Student loans, tuition, public university funding." },
-        { "name": "School Choice", "description": "Charter schools, vouchers, homeschooling policy." },
-        { "name": "Education Equity", "description": "Special education, closing achievement gaps." },
-        { "name": "STEM & Workforce Training", "description": "Science, tech, engineering education, vocational programs." }
+        { 
+          "name": "K-12 Education", 
+          "description": "Funding, curriculum standards, teacher pay.",
+          "conservative_view": "Local control, parental choice in curriculum, merit pay for teachers, and emphasis on core academic subjects and discipline.",
+          "liberal_view": "Adequate public funding, professional teacher compensation, inclusive curriculum, and addressing achievement gaps."
+        },
+        { 
+          "name": "Higher Education", 
+          "description": "Student loans, tuition, public university funding.",
+          "conservative_view": "Personal responsibility for education costs, reduced government subsidies that inflate tuition, and market-based solutions.",
+          "liberal_view": "Accessible higher education through public funding, loan forgiveness, and treating education as public investment."
+        },
+        { 
+          "name": "School Choice", 
+          "description": "Charter schools, vouchers, homeschooling policy.",
+          "conservative_view": "Competition improves education quality; parents should choose schools that align with their values and children's needs.",
+          "liberal_view": "Public schools need support, not diversion of funds; school choice can increase segregation and inequality."
+        },
+        { 
+          "name": "Education Equity", 
+          "description": "Special education, closing achievement gaps.",
+          "conservative_view": "Equal opportunity through high standards for all; avoid lowering expectations in name of equity.",
+          "liberal_view": "Targeted resources and support needed to address historical disadvantages and ensure equal educational outcomes."
+        },
+        { 
+          "name": "STEM & Workforce Training", 
+          "description": "Science, tech, engineering education, vocational programs.",
+          "conservative_view": "Industry partnerships and practical skills training prepare students for jobs; reduce emphasis on four-year college for all.",
+          "liberal_view": "Public investment in STEM education and job training programs ensure workforce competitiveness and worker mobility."
+        }
       ]
     },
     {
       "name": "Social Issues",
       "description": "Civil rights, immigration, criminal justice, and family policy.",
+      "conservative_view": "Traditional values, law and order, national sovereignty, individual responsibility, and preservation of established social institutions.",
+      "liberal_view": "Social justice, equality, inclusive society, criminal justice reform, and protection of marginalized groups' rights.",
       "subcategories": [
-        { "name": "Civil Rights", "description": "Anti-discrimination laws, voting rights protections." },
-        { "name": "Immigration", "description": "Border policy, pathways to citizenship, asylum." },
-        { "name": "Criminal Justice", "description": "Police reform, sentencing, prison system funding." },
-        { "name": "Family & Culture", "description": "Marriage policy, gender and reproductive rights." },
-        { "name": "Drug Policy", "description": "Legalization, decriminalization, controlled substances." },
-        { "name": "Privacy & Civil Liberties", "description": "Surveillance, individual rights, government overreach." }
+        { 
+          "name": "Civil Rights", 
+          "description": "Anti-discrimination laws, voting rights protections.",
+          "conservative_view": "Equal treatment under law without special preferences; colorblind policies that don't consider race or identity.",
+          "liberal_view": "Active measures needed to combat systemic discrimination and ensure equal opportunities for marginalized groups."
+        },
+        { 
+          "name": "Immigration", 
+          "description": "Border policy, pathways to citizenship, asylum.",
+          "conservative_view": "Secure borders, enforce existing laws, orderly legal immigration process, and protection of American workers and culture.",
+          "liberal_view": "Comprehensive immigration reform, humane treatment of migrants, pathway to citizenship, and embracing cultural diversity."
+        },
+        { 
+          "name": "Criminal Justice", 
+          "description": "Police reform, sentencing, prison system funding.",
+          "conservative_view": "Law and order, support for police, tough sentencing for violent crimes, and personal accountability for criminal behavior.",
+          "liberal_view": "Criminal justice reform, addressing racial disparities, rehabilitation over incarceration, and police accountability."
+        },
+        { 
+          "name": "Family & Culture", 
+          "description": "Marriage policy, gender and reproductive rights.",
+          "conservative_view": "Traditional family structures, parental rights, religious freedom, and biological reality in gender policy.",
+          "liberal_view": "Marriage equality, LGBTQ+ rights, gender identity recognition, and diverse family structures acceptance."
+        },
+        { 
+          "name": "Drug Policy", 
+          "description": "Legalization, decriminalization, controlled substances.",
+          "conservative_view": "Maintaining drug prohibition to protect public health and safety, focus on enforcement and treatment.",
+          "liberal_view": "Drug decriminalization, harm reduction, treating addiction as health issue rather than criminal matter."
+        },
+        { 
+          "name": "Privacy & Civil Liberties", 
+          "description": "Surveillance, individual rights, government overreach.",
+          "conservative_view": "Strong national security measures balanced with constitutional rights; law enforcement needs adequate tools.",
+          "liberal_view": "Robust privacy protections, limits on government surveillance, and strong civil liberties safeguards."
+        }
       ]
     },
     {
       "name": "Environment & Energy",
       "description": "Natural resource policy, energy production, climate change response.",
+      "conservative_view": "Balanced approach prioritizing economic growth, energy independence, private property rights, and market-based environmental solutions.",
+      "liberal_view": "Aggressive climate action, renewable energy transition, environmental protection over short-term economic interests.",
       "subcategories": [
-        { "name": "Climate Policy", "description": "Emissions limits, carbon pricing, green incentives." },
-        { "name": "Energy Production", "description": "Fossil fuels, nuclear power, renewable energy." },
-        { "name": "Conservation", "description": "Public lands, wildlife, pollution control." },
-        { "name": "Environmental Justice", "description": "Equity in pollution exposure, protecting vulnerable communities." },
-        { "name": "Water Policy", "description": "Clean water access, drought response, water rights." }
+        { 
+          "name": "Climate Policy", 
+          "description": "Emissions limits, carbon pricing, green incentives.",
+          "conservative_view": "Market-based solutions, technological innovation, and avoiding economic disruption while addressing environmental concerns gradually.",
+          "liberal_view": "Urgent government action on climate change through regulation, carbon pricing, and rapid transition to clean energy."
+        },
+        { 
+          "name": "Energy Production", 
+          "description": "Fossil fuels, nuclear power, renewable energy.",
+          "conservative_view": "All-of-the-above energy strategy including domestic fossil fuels for energy independence and economic benefits.",
+          "liberal_view": "Rapid transition to renewable energy sources, phase out fossil fuels, and government investment in clean energy."
+        },
+        { 
+          "name": "Conservation", 
+          "description": "Public lands, wildlife, pollution control.",
+          "conservative_view": "Balanced use of natural resources for economic benefit while maintaining conservation; respect for private property rights.",
+          "liberal_view": "Strong environmental protection, expansion of protected areas, and prioritizing conservation over resource extraction."
+        },
+        { 
+          "name": "Environmental Justice", 
+          "description": "Equity in pollution exposure, protecting vulnerable communities.",
+          "conservative_view": "Economic opportunity and jobs can improve communities; avoid regulations that harm local economies.",
+          "liberal_view": "Address disproportionate environmental burdens on minority and low-income communities through targeted policies."
+        },
+        { 
+          "name": "Water Policy", 
+          "description": "Clean water access, drought response, water rights.",
+          "conservative_view": "Respect existing water rights, market-based allocation systems, and local management of water resources.",
+          "liberal_view": "Ensure universal access to clean water, government role in conservation, and environmental flow protection."
+        }
       ]
     },
     {
       "name": "Defense & Foreign Policy",
       "description": "Military, alliances, war powers, and global diplomacy.",
+      "conservative_view": "Peace through strength, strong national defense, American leadership, secure borders, and protecting national interests.",
+      "liberal_view": "Diplomatic solutions, multilateral cooperation, reduced military spending, human rights focus, and international law compliance.",
       "subcategories": [
-        { "name": "Military Spending", "description": "Defense budgets, troop levels, weapons programs." },
-        { "name": "Foreign Relations", "description": "Treaties, alliances, international aid." },
-        { "name": "Security & Intelligence", "description": "Cybersecurity, surveillance, intelligence operations." },
-        { "name": "Veterans Affairs", "description": "VA funding, healthcare, benefits for veterans." }
+        { 
+          "name": "Military Spending", 
+          "description": "Defense budgets, troop levels, weapons programs.",
+          "conservative_view": "Strong defense requires adequate funding, modern equipment, and military superiority to deter threats and protect allies.",
+          "liberal_view": "Excessive military spending diverts resources from domestic needs; diplomacy more effective than military solutions."
+        },
+        { 
+          "name": "Foreign Relations", 
+          "description": "Treaties, alliances, international aid.",
+          "conservative_view": "America first approach, bilateral relationships based on mutual benefit, skepticism of international organizations constraining sovereignty.",
+          "liberal_view": "Multilateral engagement, international cooperation, foreign aid as moral obligation and strategic investment."
+        },
+        { 
+          "name": "Security & Intelligence", 
+          "description": "Cybersecurity, surveillance, intelligence operations.",
+          "conservative_view": "Strong intelligence capabilities necessary for national security, support for law enforcement and military intelligence operations.",
+          "liberal_view": "Intelligence activities need oversight to prevent abuse, protect civil liberties, and ensure accountability."
+        },
+        { 
+          "name": "Veterans Affairs", 
+          "description": "VA funding, healthcare, benefits for veterans.",
+          "conservative_view": "Honor military service through comprehensive veteran benefits, healthcare, and support as patriotic duty.",
+          "liberal_view": "Robust veteran support as moral obligation, including mental health services and addressing service-related health issues."
+        }
       ]
     },
     {
       "name": "Technology & Innovation",
       "description": "Regulation of digital platforms, privacy, and emerging tech.",
+      "conservative_view": "Light regulation to promote innovation, market competition, free speech protection, and American technological leadership.",
+      "liberal_view": "Strong regulation to protect privacy, prevent monopolization, ensure platform accountability, and address digital inequities.",
       "subcategories": [
-        { "name": "Data Privacy", "description": "User data protection, surveillance limits." },
-        { "name": "Tech Regulation", "description": "Big Tech antitrust, online content moderation." },
-        { "name": "Emerging Tech", "description": "AI, biotech, intellectual property rights." },
-        { "name": "Cybersecurity", "description": "Critical infrastructure protection, ransomware response." },
-        { "name": "Digital Speech & Misinformation", "description": "Free speech vs moderation, disinformation campaigns." }
+        { 
+          "name": "Data Privacy", 
+          "description": "User data protection, surveillance limits.",
+          "conservative_view": "Market-based privacy solutions, individual choice in data sharing, minimal government interference in business models.",
+          "liberal_view": "Strong data protection laws, user rights over personal information, limits on corporate data collection and use."
+        },
+        { 
+          "name": "Tech Regulation", 
+          "description": "Big Tech antitrust, online content moderation.",
+          "conservative_view": "Protect free speech online, avoid censorship, let market competition address tech monopolies naturally.",
+          "liberal_view": "Break up tech monopolies, regulate platforms to prevent harm, ensure diverse voices and competition online."
+        },
+        { 
+          "name": "Emerging Tech", 
+          "description": "AI, biotech, intellectual property rights.",
+          "conservative_view": "Light regulatory touch to maintain American innovation leadership, protect intellectual property rights and entrepreneurship.",
+          "liberal_view": "Proactive regulation to ensure AI safety, equitable access to benefits, and prevention of harmful applications."
+        },
+        { 
+          "name": "Cybersecurity", 
+          "description": "Critical infrastructure protection, ransomware response.",
+          "conservative_view": "Public-private partnerships, strong cyber defenses, minimal regulation that could hamper security innovation.",
+          "liberal_view": "Government coordination of cybersecurity, regulation of critical infrastructure, international cooperation on cyber norms."
+        },
+        { 
+          "name": "Digital Speech & Misinformation", 
+          "description": "Free speech vs moderation, disinformation campaigns.",
+          "conservative_view": "Protect free speech rights online, skeptical of content moderation that may silence legitimate viewpoints.",
+          "liberal_view": "Platform responsibility to combat misinformation while protecting legitimate speech and preventing harm."
+        }
       ]
     },
     {
       "name": "Infrastructure & Transportation",
       "description": "Development of physical and digital infrastructure.",
+      "conservative_view": "Private sector efficiency, user fees for infrastructure, limited government role, focus on core infrastructure needs.",
+      "liberal_view": "Major public investment in infrastructure as economic stimulus, job creation, and ensuring equitable access.",
       "subcategories": [
-        { "name": "Transportation", "description": "Roads, transit systems, aviation, maritime." },
-        { "name": "Digital Infrastructure", "description": "Broadband expansion, rural connectivity." },
-        { "name": "Housing & Urban Planning", "description": "Affordable housing, zoning laws, urban renewal." },
-        { "name": "Public Works & Utilities", "description": "Water systems, electricity grid, waste management." }
+        { 
+          "name": "Transportation", 
+          "description": "Roads, transit systems, aviation, maritime.",
+          "conservative_view": "User fees and private sector involvement in transportation, focus on roads and highways over mass transit.",
+          "liberal_view": "Public investment in mass transit, high-speed rail, and sustainable transportation options to reduce emissions."
+        },
+        { 
+          "name": "Digital Infrastructure", 
+          "description": "Broadband expansion, rural connectivity.",
+          "conservative_view": "Private sector-led broadband expansion with minimal government interference, market competition drives access.",
+          "liberal_view": "Government investment needed to ensure universal broadband access, especially in underserved rural and urban areas."
+        },
+        { 
+          "name": "Housing & Urban Planning", 
+          "description": "Affordable housing, zoning laws, urban renewal.",
+          "conservative_view": "Market-based housing solutions, reduce zoning restrictions, private sector development, homeownership promotion.",
+          "liberal_view": "Government role in ensuring affordable housing, tenant protections, addressing homelessness and housing discrimination."
+        },
+        { 
+          "name": "Public Works & Utilities", 
+          "description": "Water systems, electricity grid, waste management.",
+          "conservative_view": "Private utility management where possible, user fees for services, efficient delivery through market mechanisms.",
+          "liberal_view": "Public utilities ensure universal access and affordability, government investment in modern, resilient infrastructure."
+        }
       ]
     },
     {
       "name": "Government & Institutional Reform",
       "description": "Rules and systems shaping governance and elections.",
+      "conservative_view": "Limited government, constitutional originalism, federalism, election integrity, and maintaining traditional institutional structures.",
+      "liberal_view": "Democratic reforms, voting rights expansion, government accountability, and institutional changes to ensure fair representation.",
       "subcategories": [
-        { "name": "Electoral Law", "description": "Voting rights, redistricting, election security." },
-        { "name": "Campaign Finance", "description": "Political donations, PACs, transparency rules." },
-        { "name": "Judicial & Institutional Reform", "description": "Court reform, ethics oversight, bureaucracy efficiency." },
-        { "name": "Transparency & Anti-Corruption", "description": "Whistleblower protections, anti-bribery laws." }
+        { 
+          "name": "Electoral Law", 
+          "description": "Voting rights, redistricting, election security.",
+          "conservative_view": "Election integrity through voter ID, accurate voter rolls, and preventing fraud while maintaining constitutional election processes.",
+          "liberal_view": "Voting rights expansion, automatic registration, easier ballot access, and preventing voter suppression."
+        },
+        { 
+          "name": "Campaign Finance", 
+          "description": "Political donations, PACs, transparency rules.",
+          "conservative_view": "Political spending as free speech, minimal restrictions on contributions, market of ideas through unlimited political expression.",
+          "liberal_view": "Campaign finance reform to limit corporate influence, public campaign financing, and transparency in political donations."
+        },
+        { 
+          "name": "Judicial & Institutional Reform", 
+          "description": "Court reform, ethics oversight, bureaucracy efficiency.",
+          "conservative_view": "Judicial restraint, originalist interpretation, respect for institutional traditions and constitutional limits on government power.",
+          "liberal_view": "Court reform to address politicization, strong ethics enforcement, and institutional changes for better representation."
+        },
+        { 
+          "name": "Transparency & Anti-Corruption", 
+          "description": "Whistleblower protections, anti-bribery laws.",
+          "conservative_view": "Government transparency and accountability while protecting legitimate executive privilege and national security needs.",
+          "liberal_view": "Strong transparency laws, whistleblower protections, and robust anti-corruption measures to ensure public trust."
+        }
       ]
     },
     {
       "name": "Agriculture & Rural Issues",
       "description": "Policies affecting farmers, food safety, and rural economies.",
+      "conservative_view": "Support for family farming, minimal regulation, market-based solutions, and preserving rural way of life and property rights.",
+      "liberal_view": "Sustainable agriculture, worker protections, environmental standards, and support for small farmers over agribusiness.",
       "subcategories": [
-        { "name": "Farm Policy", "description": "Subsidies, crop insurance, agribusiness regulation." },
-        { "name": "Food Safety", "description": "Labeling, inspection, GMO policy." },
-        { "name": "Rural Development", "description": "Infrastructure, healthcare, broadband for rural areas." }
+        { 
+          "name": "Farm Policy", 
+          "description": "Subsidies, crop insurance, agribusiness regulation.",
+          "conservative_view": "Support for family farmers through crop insurance and market-based programs while reducing regulatory burden.",
+          "liberal_view": "Farm subsidies should support sustainable practices, small farmers, and rural communities rather than large agribusiness."
+        },
+        { 
+          "name": "Food Safety", 
+          "description": "Labeling, inspection, GMO policy.",
+          "conservative_view": "Science-based food safety regulations, support for agricultural innovation including GMOs, minimal labeling requirements.",
+          "liberal_view": "Strong food safety oversight, consumer right to know through labeling, precautionary approach to new food technologies."
+        },
+        { 
+          "name": "Rural Development", 
+          "description": "Infrastructure, healthcare, broadband for rural areas.",
+          "conservative_view": "Market-based rural development, private sector solutions, maintain rural autonomy and traditional ways of life.",
+          "liberal_view": "Government investment needed to ensure rural areas have equal access to healthcare, broadband, and economic opportunities."
+        }
       ]
     },
     {
       "name": "Budget & Appropriations",
       "description": "Overall fiscal planning, debt, and major spending bills.",
+      "conservative_view": "Fiscal responsibility, balanced budgets, debt reduction, limited government spending, and prioritizing essential functions only.",
+      "liberal_view": "Strategic government investment for economic growth, social programs, infrastructure, with less concern for short-term deficits.",
       "subcategories": [
-        { "name": "Debt & Deficit", "description": "Debt ceiling, deficit reduction measures." },
-        { "name": "Appropriations", "description": "Omnibus spending bills, continuing resolutions." }
+        { 
+          "name": "Debt & Deficit", 
+          "description": "Debt ceiling, deficit reduction measures.",
+          "conservative_view": "Fiscal discipline requires debt reduction, spending cuts, and living within government means to avoid burden on future generations.",
+          "liberal_view": "Government debt acceptable for productive investments; focus on economic growth and revenue enhancement over austerity."
+        },
+        { 
+          "name": "Appropriations", 
+          "description": "Omnibus spending bills, continuing resolutions.",
+          "conservative_view": "Streamlined government funding focused on core functions, line-item oversight to eliminate waste and unnecessary programs.",
+          "liberal_view": "Adequate funding for government services, social programs, and public investments even if requiring larger appropriations."
+        }
       ]
     },
     {
       "name": "Science & Space",
       "description": "Policies advancing research, exploration, and innovation.",
+      "conservative_view": "Private sector innovation, market-driven research, space commercialization, and maintaining American technological leadership.",
+      "liberal_view": "Public investment in research and development, space exploration as public good, scientific research for societal benefit.",
       "subcategories": [
-        { "name": "Space Policy", "description": "NASA programs, private space industry regulation." },
-        { "name": "Research & Development", "description": "Federal R&D funding, innovation initiatives." }
+        { 
+          "name": "Space Policy", 
+          "description": "NASA programs, private space industry regulation.",
+          "conservative_view": "Private space industry leadership with minimal regulation, commercial space development, and national security space capabilities.",
+          "liberal_view": "NASA as public agency for exploration and science, regulation of commercial space to prevent conflicts and ensure safety."
+        },
+        { 
+          "name": "Research & Development", 
+          "description": "Federal R&D funding, innovation initiatives.",
+          "conservative_view": "Private sector R&D more efficient, government role limited to basic research and national security applications.",
+          "liberal_view": "Government investment in R&D drives innovation, addresses market failures, and ensures research serves public interest."
+        }
       ]
     },
     {
       "name": "Disaster & Emergency Management",
       "description": "Preparedness, response, and recovery from disasters.",
+      "conservative_view": "Local and state responsibility for disaster response, private sector efficiency, individual preparedness and responsibility.",
+      "liberal_view": "Federal coordination and resources necessary for effective disaster response, climate adaptation, and protecting vulnerable populations.",
       "subcategories": [
-        { "name": "Natural Disasters", "description": "Hurricane, wildfire, earthquake response." },
-        { "name": "Emergency Preparedness", "description": "FEMA programs, public warning systems." }
+        { 
+          "name": "Natural Disasters", 
+          "description": "Hurricane, wildfire, earthquake response.",
+          "conservative_view": "State and local response with federal support, private sector involvement in recovery, personal responsibility for disaster preparedness.",
+          "liberal_view": "Strong federal disaster response, climate change adaptation measures, and ensuring equitable recovery assistance."
+        },
+        { 
+          "name": "Emergency Preparedness", 
+          "description": "FEMA programs, public warning systems.",
+          "conservative_view": "Efficient emergency management with state-led coordination, avoiding federal overreach while maintaining readiness.",
+          "liberal_view": "Well-funded federal emergency management, comprehensive preparedness programs, and coordination across all levels of government."
+        }
       ]
     },
     {
       "name": "Tribal & Indigenous Affairs",
       "description": "Policy related to Native American tribes and sovereignty.",
+      "conservative_view": "Respect for tribal sovereignty within constitutional framework, economic development opportunities, and gradual integration approaches.",
+      "liberal_view": "Honor treaty obligations, support tribal self-determination, address historical injustices, and protect indigenous rights and culture.",
       "subcategories": [
-        { "name": "Tribal Sovereignty", "description": "Self-governance, treaty rights." },
-        { "name": "Economic & Cultural Policy", "description": "Resource rights, cultural preservation." }
+        { 
+          "name": "Tribal Sovereignty", 
+          "description": "Self-governance, treaty rights.",
+          "conservative_view": "Balanced approach to tribal sovereignty respecting both tribal rights and federal/state authority within constitutional limits.",
+          "liberal_view": "Strong tribal sovereignty, honoring treaty obligations, and supporting tribal self-determination and governance rights."
+        },
+        { 
+          "name": "Economic & Cultural Policy", 
+          "description": "Resource rights, cultural preservation.",
+          "conservative_view": "Economic development opportunities for tribes through resource development and business partnerships while respecting property rights.",
+          "liberal_view": "Protect tribal cultural heritage and sacred sites, support traditional practices, and ensure equitable resource management."
+        }
       ]
     }
   ]

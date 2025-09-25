@@ -1,3 +1,4 @@
+from datetime import datetime
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
@@ -82,11 +83,16 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
                         Please provide:
                         1. Classify the bill into one or more relevant political categories and subcategories. 
                            Determine the impact on each relevant category using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
+                           Rate the bill on how conservative/progressive it is within each category. Use a scale of -1 to +1, where:
+                            - -1 = fully aligned with the liberal_view
+                            - 0 = neutral or mixed
+                            - +1 = fully aligned with the conservative_view
                         2. Rate the bill on any relevant political spectrums. Use a scale of -1 to +1, where:
                             - -1 = fully aligned with the left/progressive side
                             - 0 = neutral or mixed
                             - +1 = fully aligned with the right/conservative side
-                        3. If a spectrum is **not relevant**, omit it from the output.
+                            Determine the impact on each relevant spectrum using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
+                        3. If a spectrum/category is **not relevant**, omit it from the output.
                         4. Analysis of what a YES vote represents politically
                         5. Analysis of what a NO vote represents politically 
                         6. The estimated impact of the bill (how important it is) 
@@ -96,20 +102,27 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
                             "political_categories": {{
                                 "primary": {{
                                 "name": "string",
-                                "impact_score": 0.0 to 1.0
+                                "partisan_score": -1.0 to 1.0,
+                                "impact_score": 0.0 to 1.0,
+                                "reasoning": "string"
                                 }},
                                 "secondary": [{{
                                 "name": "string",
-                                "impact_score": 0.0 to 1.0
+                                "partisan_score": -1.0 to 1.0,
+                                "impact_score": 0.0 to 1.0,
+                                "reasoning": "string"
                                 }}],
                                 "subcategories": [{{
                                 "name": "string",
-                                "impact_score": 0.0 to 1.0
+                                "partisan_score": -1.0 to 1.0,
+                                "impact_score": 0.0 to 1.0,
+                                "reasoning": "string"
                                 }}]
                             }},
                             "political_spectrums": {{
                                 "spectrum_name": {{
-                                "score": -1.0 to 1.0,
+                                "partisan_score": -1.0 to 1.0,
+                                "impact_score": 0.0 to 1.0,
                                 "reasoning": "explanation"
                                 }}
                             }},
@@ -182,6 +195,8 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
                 analysis_result = json.loads(response_content)
                 if attempt > 0:
                     print(f"Successfully parsed JSON on retry attempt {attempt}")
+                # Add last_modified field for filtering
+                analysis_result["last_modified"] = datetime.now(datetime.timezone.utc).isoformat()
                 return analysis_result
             except json.JSONDecodeError as e:
                 if attempt < max_retries:
