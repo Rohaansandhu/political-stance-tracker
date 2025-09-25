@@ -13,6 +13,9 @@ client = OpenAI(
     api_key=os.getenv("OPENROUTER_API_KEY"),
 )
 
+# Update Schema after every change to prompts
+SCHEMA_VERSION = 1
+
 SYSTEM_PROMPT = """
 You are an expert political analyst specializing in legislative classification. 
 
@@ -197,6 +200,8 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
                     print(f"Successfully parsed JSON on retry attempt {attempt}")
                 # Add last_modified field for filtering
                 analysis_result["last_modified"] = datetime.now(datetime.timezone.utc).isoformat()
+                # Add schema_version for future compatibility
+                analysis_result["schema_version"] = SCHEMA_VERSION
                 return analysis_result
             except json.JSONDecodeError as e:
                 if attempt < max_retries:

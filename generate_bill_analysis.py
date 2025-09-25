@@ -7,6 +7,19 @@ import bill_analysis_client
 # Path to the congress repo data directory
 CONGRESS_DATA_DIR = Path("data")
 
+def check_schema_version(bill_analysis_file):
+    """Check if existing analysis has current schema version."""
+    try:
+        with open(bill_analysis_file, "r") as f:
+            existing_analysis = json.load(f)
+        
+        # Check if schema_version exists and matches current version
+        existing_version = existing_analysis.get("schema_version", "1.0")  # Default to 1.0 for old analyses
+        return existing_version == bill_analysis_client.SCHEMA_VERSION
+    
+    except (json.JSONDecodeError, KeyError, FileNotFoundError):
+        return False
+
 def generate_bill_analyses(force=False):
     generated_bills = set()
     start_time = time.perf_counter()
@@ -45,11 +58,14 @@ def generate_bill_analyses(force=False):
                 if not is_voted.exists():
                     continue
 
-                # Check if the file exists already unless force = True
-                bill_analysis_file = folder / "bill_analysis.json"
+                # Check if analysis exists and has current schema version
+                bill_analysis_file = folder / "bill_analysis.json"                
                 if bill_analysis_file.exists() and not force:
-                    print(f"{folder.name} has existing analysis")
-                    continue
+                    if check_schema_version(bill_analysis_file):
+                        print(f"{folder.name} has current analysis (schema v{bill_analysis_client.SCHEMA_VERSION}) - skipping")
+                        continue
+                    else:
+                        print(f"{folder.name} has outdated schema - regenerating analysis")
 
                 with open(data_file, "r") as f:
                     bill_data = json.load(f)
@@ -59,14 +75,14 @@ def generate_bill_analyses(force=False):
                 if not summary_data:
                     print(f"ERROR: Couldn't find summary data for {folder.name}")
                     continue
-                summart_text = summary_data.get("text")
-                if summart_text == "":
+                summary_text = summary_data.get("text") 
+                if summary_text == "":
                     print(f"ERROR: Couldn't find summary text for {folder.name}")
                     continue
 
                 # Call LLM Client
                 # Using grok for now, because gpt-oss was not working
-                bill_analysis = bill_analysis_client.analyze_bill(summart_text, model="x-ai/grok-4-fast:free")
+                bill_analysis = bill_analysis_client.analyze_bill(summary_text, model="x-ai/grok-4-fast:free")
 
                 # Write analysis to folder
                 out_file = folder / "bill_analysis.json"
@@ -76,7 +92,7 @@ def generate_bill_analyses(force=False):
                 generated_bills.add(folder.name)
                 print(f"{folder.name} bill analysis generated")
     end_time = time.perf_counter()
-    print(f"Elapsed time: {start_time - end_time} seconds")
+    print(f"Elapsed time: {end_time - start_time} seconds") 
 
     return generated_bills
 
