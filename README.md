@@ -1,31 +1,76 @@
+
 # United States Political Stance Tracker
 Analyzes voting records to show where US Congress Members stand on major political issues.
 
 ## Setup
-Clone this repo and install dependencies in a virtual environment
+Clone this repo and install dependencies in a virtual environment:
 ```bash
 python3 -m venv env
 source env/bin/activate
 pip install -r requirements.txt
 ```
-Make sure the congress project
- is cloned as a submodule inside congress-data/congress then run this command to download the roll call vote data:
-```bash
-usc-run votes
-```
+
+Make sure the congress project is cloned as a submodule inside this repo.
 Follow the [congress repo instructions](https://github.com/unitedstates/congress) to download all necessary packages and tools.
 
 ## Usage
-Fetches the latest legislator information and saves it locally as YAML:
-```bash 
-python3 ./get_current_legislators.py
-```
 
+### 0. Fetch Roll Call Data
+Using the [unitedstates/congress](https://github.com/unitedstates/congress) submodule, run:
+```bash
+usc-run votes
+```
+Output: `data/{congress}/votes`
+
+This will download all voting roll call data. You can specify congress or session with the --congress or --session flags. Please make sure you run this command in the top-level directory so the data populates in the correct folder.
+
+### 1. Fetch Current Legislators
+Downloads the latest legislator information and saves it locally as JSON:
+```bash
+python3 get_current_legislators.py
+```
+Output: `data/current-legislators.json`
+
+### 2. Process Votes by Member
 Parses all roll call votes for the current Congress and outputs one JSON file per legislator containing their voting record:
 ```bash
-python3 ./process_votes_by_member.py
+python3 process_votes_by_member.py
 ```
-All outputs are stored in the generated ```data/``` folder
+Output: `data/organized_votes/{member_id}.json`
+
+### 3. Get Voted Bills
+Fetches bill status for all bills that have been voted on and marks them accordingly. Also generates `data.json` files for bill XML data.
+```bash
+python3 get_voted_bills.py [--force]
+```
+Use `--force` to re-download and re-parse all bill data.
+
+### 4. Generate Bill Analyses
+Analyzes bills using an LLM and generates a `bill_analysis.json` for each voted bill.
+```bash
+python3 generate_bill_analysis.py [--force]
+```
+Use `--force` to overwrite existing analyses.
+
+### 5. Calculate Member Ideology
+Processes all legislators and calculates ideology scores based on their voting records and bill analyses.
+```bash
+python3 calc_member_ideology.py
+```
+Output: `data/legislator_profiles/{member_id}.json`
+
+### 6. Member Ranking
+Ranks legislators by political spectrums and categories, generates summary reports and CSV exports.
+```bash
+python3 member_ranking.py
+```
+Outputs:
+- `data/rankings/all_rankings.json` (full rankings)
+- `data/rankings/extremes_summary.json` (summary of most extreme legislators)
+- `data/rankings/csv/` (CSV exports)
+
+## Data Output
+All outputs are stored in the generated `data/` folder and its subdirectories.
 
 ## Acknowledgments
-Special thanks to the [unitedstates/congress](https://github.com/unitedstates/congress) project for providing the House and Senate roll call vote scrapers that make this project possible. 
+Special thanks to the [unitedstates/congress](https://github.com/unitedstates/congress) project for providing the House and Senate scrapers that make this project possible.
