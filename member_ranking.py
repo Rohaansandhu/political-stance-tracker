@@ -25,6 +25,7 @@ def load_all_legislator_profiles():
 
 def collect_all_categories_and_spectrums(legislators):
     """Collect all unique categories and spectrums across all legislators."""
+    all_main_categories = set()
     all_primary_categories = set()
     all_secondary_categories = set()
     all_subcategories = set()
@@ -32,6 +33,7 @@ def collect_all_categories_and_spectrums(legislators):
     
     for legislator in legislators:
         # Collect categories
+        all_main_categories.update(legislator.get("main_categories", {}).keys())
         all_primary_categories.update(legislator.get("primary_categories", {}).keys())
         all_secondary_categories.update(legislator.get("secondary_categories", {}).keys())
         all_subcategories.update(legislator.get("subcategories", {}).keys())
@@ -40,6 +42,7 @@ def collect_all_categories_and_spectrums(legislators):
         all_spectrums.update(legislator.get("detailed_spectrums", {}).keys())
     
     return {
+        "main_categories": sorted(all_main_categories),
         "primary_categories": sorted(all_primary_categories),
         "secondary_categories": sorted(all_secondary_categories), 
         "subcategories": sorted(all_subcategories),
@@ -93,6 +96,18 @@ def generate_spectrum_rankings(legislators):
                 "rankings": ranked
             }
             # print(f"{spectrum}: {len(ranked)} legislators")
+
+    # Rank on main categories
+    for category in all_items["main_categories"]:
+        ranked = rank_legislators_by_spectrum(legislators, category, "main_categories")
+        if ranked:
+            rankings[f"main_{category}"] = {
+                "type": "main_category",
+                "name": category,
+                "count": len(ranked),
+                "rankings": ranked
+            }
+            # print(f"{category}: {len(ranked)} legislators")
     
     # Rank on primary categories
     for category in all_items["primary_categories"]:
