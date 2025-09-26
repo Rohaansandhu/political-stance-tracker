@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
@@ -14,7 +14,7 @@ client = OpenAI(
 )
 
 # Update Schema after every change to prompts
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SYSTEM_PROMPT = """
 You are an expert political analyst specializing in legislative classification. 
@@ -171,9 +171,11 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
             is_retry = attempt > 0
             user_prompt = create_user_prompt(is_retry, last_response)
             
+            # Use temperature of 0 for deterministic output
             completion = client.chat.completions.create(
                 extra_body={},
                 model=model,
+                temperature=0,
                 messages=[
                     {
                         "role": "system",
@@ -199,7 +201,7 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
                 if attempt > 0:
                     print(f"Successfully parsed JSON on retry attempt {attempt}")
                 # Add last_modified field for filtering
-                analysis_result["last_modified"] = datetime.now(datetime.timezone.utc).isoformat()
+                analysis_result["last_modified"] = datetime.now(timezone.utc).isoformat()
                 # Add schema_version for future compatibility
                 analysis_result["schema_version"] = SCHEMA_VERSION
                 return analysis_result
