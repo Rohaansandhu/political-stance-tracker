@@ -193,6 +193,7 @@ def create_csv_exports(rankings):
             csv_data.append({
                 "rank": rank,
                 "name": legislator_info["name"],
+                "id": legislator_info["id"],
                 "party": legislator_info["party"],
                 "state": legislator_info["state"],
                 "score": round(score, 4),

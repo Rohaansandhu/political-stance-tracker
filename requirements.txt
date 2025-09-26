@@ -4,4 +4,6 @@ lxml>=4.9.3
 schedule>=1.2.2
 pandas>=2.1.0
 openai>=1.108.0
+matplotlib>=3.9.4
+seaborn>=0.13.2
 
