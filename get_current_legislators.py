@@ -13,7 +13,7 @@ output_dir = "data"
 os.makedirs(output_dir, exist_ok=True)
 
 # File path
-json_path = os.path.join(output_dir, "current-legislators.json")
+json_path = os.path.join(output_dir, "current_legislators.json")
 
 # Write JSON
 with open(json_path, "w") as f:
