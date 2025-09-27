@@ -50,12 +50,16 @@ def process_votes():
                 if bill.get("type") not in ["hr", "hjres", "s", "sjres"]:
                     continue
 
+                # Only include votes on passage of bills
+                category = vote_data.get("category")
+                if not category == "passage":
+                    continue
+
                 # Vote metadata
                 vote_id = vote_data.get("vote_id")
                 vote_number = vote_data.get("number")
                 chamber = vote_data.get("chamber")
                 date = vote_data.get("date")
-                category = vote_data.get("category")
                 question = vote_data.get("question")
                 subject = vote_data.get("subject")
                 source_url = vote_data.get("source_url")
