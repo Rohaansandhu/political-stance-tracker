@@ -59,6 +59,7 @@ python3 calc_member_ideology.py
 ```
 Output: `data/legislator_profiles/{member_id}.json`
 
+
 ### 6. Member Ranking
 Ranks legislators by political spectrums and categories, generates summary reports and CSV exports.
 ```bash
@@ -68,6 +69,16 @@ Outputs:
 - `data/rankings/all_rankings.json` (full rankings)
 - `data/rankings/extremes_summary.json` (summary of most extreme legislators)
 - `data/rankings/csv/` (CSV exports)
+
+### 7. Visualize Rankings
+Generates plots and visualizations from the CSV ranking outputs. Plots are saved in `data/rankings/csv/plots/`.
+```bash
+python3 visualize_rankings.py
+```
+Outputs:
+- Boxplots of ideological score distributions by party for each ranking
+- Scatter plots of rank vs. score, colored by party
+- All plots saved as PNG files in `data/rankings/csv/plots/`
 
 ## Data Output
 All outputs are stored in the generated `data/` folder and its subdirectories.

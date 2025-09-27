@@ -1,4 +1,3 @@
-# visualize_rankings.py
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -38,11 +37,11 @@ if __name__ == "__main__":
     csv_files = list(RESULTS_DIR.glob("*.csv"))
 
     if not csv_files:
-        raise FileNotFoundError("No CSV files found in results/")
+        raise FileNotFoundError("No CSV files found in data/rankings/csv")
 
     for csv_file in csv_files:
         df = pd.read_csv(csv_file)
-        name = csv_file.stem  # file name without extension
+        name = csv_file.stem
 
         plot_distribution(df, name)
         plot_all_scores(df, name)
