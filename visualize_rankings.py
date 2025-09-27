@@ -32,6 +32,26 @@ def plot_all_scores(df, name):
     plt.savefig(PLOTS_DIR / f"{name}_rank_vs_score.png", dpi=300)
     plt.close()
 
+def plot_ideology_space(df):
+    """Scatter of left-right (x) vs authoritarian-libertarian (y), colored by party."""
+    plt.figure(figsize=(8, 8))
+    colors = df["party"].map({"D": "blue", "R": "red", "I": "yellow"}).fillna("gray")
+
+    plt.scatter(
+        df["left_right"], 
+        df["authoritarian_libertarian"], 
+        c=colors, 
+        alpha=0.7, 
+        s=df["vote_count"]
+    )
+    plt.axhline(0, color="black", linestyle="--", linewidth=0.7)
+    plt.axvline(0, color="black", linestyle="--", linewidth=0.7)
+    plt.xlabel("Left  <----  Left-Right Score  ---->  Right")
+    plt.ylabel("Libertarian  <----  Libertarian-Authoritarian Score  ---->  Authoritarian")
+    plt.title("Overall Ideological Space of Legislators")
+    plt.tight_layout()
+    plt.savefig(PLOTS_DIR / "overall_scores_ideology_space.png", dpi=300)
+    plt.close()
 
 if __name__ == "__main__":
     csv_files = list(RESULTS_DIR.glob("*.csv"))
@@ -43,7 +63,10 @@ if __name__ == "__main__":
         df = pd.read_csv(csv_file)
         name = csv_file.stem
 
-        plot_distribution(df, name)
-        plot_all_scores(df, name)
+        if csv_file.name == "overall_scores.csv":
+            plot_ideology_space(df) 
+        else:
+            plot_distribution(df, name)
+            plot_all_scores(df, name)
 
         print(f"Plots saved for {csv_file.name} in {PLOTS_DIR}")

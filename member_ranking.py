@@ -77,6 +77,30 @@ def rank_legislators_by_spectrum(legislators, spectrum_name, spectrum_type="deta
     
     return ranked_legislators
 
+def export_overall_scores_csv(legislators):
+    """Export the overall left_right and authoritarian_libertarian scores to CSV."""
+    
+    csv_dir = OUTPUT_DIR / "csv"
+    csv_dir.mkdir(exist_ok=True)
+
+    rows = []
+    for legislator in legislators:
+        scores = legislator.get("scores", {})
+        rows.append({
+            "id": legislator.get("id"),
+            "name": legislator.get("name"),
+            "party": legislator.get("party"),
+            "state": legislator.get("state"),
+            "vote_count": legislator.get("vote_count", 0),
+            "left_right": round(scores.get("left_right", 0), 4),
+            "authoritarian_libertarian": round(scores.get("authoritarian_libertarian", 0), 4)
+        })
+    
+    df = pd.DataFrame(rows)
+    csv_file = csv_dir / "overall_scores.csv"
+    df.to_csv(csv_file, index=False)
+    print(f"Exported overall ideology scores to {csv_file}")
+
 def generate_spectrum_rankings(legislators):
     """Generate rankings for all spectrums and categories."""
     
@@ -274,10 +298,8 @@ def main():
         summary = create_summary_report(rankings)
         
         # Export to CSV
-        try:
-            create_csv_exports(rankings)
-        except ImportError:
-            print("pandas not installed - skipping CSV export")
+        create_csv_exports(rankings)
+        export_overall_scores_csv(legislators)
         
         # Print top rankings for key spectrums
         # print_top_rankings(rankings)
