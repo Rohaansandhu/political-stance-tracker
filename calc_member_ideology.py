@@ -22,93 +22,28 @@ def build_bill_id(bill: dict) -> str:
     return f"{congress}{btype}{number}"
 
 
-def collect_bill_impacts(bill_id, bill_analysis, vote):
-    """
-    Collect bill impact details for categories and spectrums.
-    Returns dicts of impacts to merge into legislator profile.
-    """
-    impacts = {
-        "spectrums": defaultdict(list),
-        "categories": defaultdict(list),
+def calculate_average_scores(vote_data_dict):
+    """Helper to calculate average weighted scores from vote data."""
+    return {
+        category: round(sum(vote["weighted_score"] for vote in votes) / len(votes), 3)
+        for category, votes in vote_data_dict.items()
+        if votes  # Only include categories with votes
     }
 
-    key_provisions = bill_analysis.get("bill_summary", {}).get("key_provisions", [])
-
-    # Spectrums
-    for spectrum_name, spectrum_data in bill_analysis.get(
-        "political_spectrums", {}
-    ).items():
-        impacts["spectrums"][spectrum_name].append(
-            {
-                "bill_id": bill_id,
-                "vote": vote,
-                "key_provisions": key_provisions,
-                "partisan_score": spectrum_data.get("partisan_score", 0),
-                "impact_score": spectrum_data.get("impact_score", 0),
-            }
-        )
-
-    # Categories (primary, secondary, subcategories)
-    political_categories = bill_analysis.get("political_categories", {})
-
-    # Primary
-    primary_category = political_categories.get("primary", {})
-    if isinstance(primary_category, dict) and primary_category.get("name"):
-        impacts["categories"][primary_category["name"]].append(
-            {
-                "bill_id": bill_id,
-                "vote": vote,
-                "key_provisions": key_provisions,
-                "partisan_score": primary_category.get("partisan_score", 0),
-                "impact_score": primary_category.get("impact_score", 0),
-            }
-        )
-
-    # Secondary
-    for sec in political_categories.get("secondary", []):
-        if isinstance(sec, dict) and sec.get("name"):
-            impacts["categories"][sec["name"]].append(
-                {
-                    "bill_id": bill_id,
-                    "vote": vote,
-                    "key_provisions": key_provisions,
-                    "partisan_score": sec.get("partisan_score", 0),
-                    "impact_score": sec.get("impact_score", 0),
-                }
-            )
-
-    # Subcategories
-    for sub in political_categories.get("subcategories", []):
-        if isinstance(sub, dict) and sub.get("name"):
-            impacts["categories"][sub["name"]].append(
-                {
-                    "bill_id": bill_id,
-                    "vote": vote,
-                    "key_provisions": key_provisions,
-                    "partisan_score": sub.get("partisan_score", 0),
-                    "impact_score": sub.get("impact_score", 0),
-                }
-            )
-
-    return impacts
 
 def calculate_legislator_ideology(legislator_votes, bill_analyses):
     """
     Calculate ideology scores for a legislator based on their voting pattern.
     """
 
-    # Initialize score accumulators
-    spectrum_scores = defaultdict(list)
-    # Main categories (Combination of primary and secondary)
-    main_category_scores = defaultdict(list)
-    primary_category_scores = defaultdict(list)
-    secondary_category_scores = defaultdict(list)
-    subcategory_scores = defaultdict(list)
+    # Store raw voting data for each spectrum/category
+    spectrum_votes = defaultdict(list)
+    primary_category_votes = defaultdict(list)
+    secondary_category_votes = defaultdict(list)
+    subcategory_votes = defaultdict(list)
+    # Combined primary + secondary
+    main_category_votes = defaultdict(list)
 
-    spectrum_impacts = defaultdict(list)
-    category_impacts = defaultdict(list)
-
-    # Process each vote
     for vote_record in legislator_votes:
         bill_id = build_bill_id(vote_record.get("bill", {}))
         if bill_id == "":
@@ -123,116 +58,105 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
 
         # Determine vote direction (1 for support, -1 for oppose)
         vote_value = get_vote_value(vote)
-        # Did not vote
-        if vote_value == 0:
+        if vote_value == 0:  # Did not vote
             continue
 
-        impacts = collect_bill_impacts(bill_id, bill_analysis, vote)
-        for sname, entries in impacts["spectrums"].items():
-            spectrum_impacts[sname].extend(entries)
-        for cname, entries in impacts["categories"].items():
-            category_impacts[cname].extend(entries)
+        key_provisions = bill_analysis.get("bill_summary", {}).get("key_provisions", [])
 
-        # Process political spectrums
-        political_spectrums = bill_analysis.get("political_spectrums", {})
-        for spectrum_name, spectrum_data in political_spectrums.items():
+        # Process spectrums - single iteration
+        for spectrum_name, spectrum_data in bill_analysis.get(
+            "political_spectrums", {}
+        ).items():
             partisan_score = spectrum_data.get("partisan_score", 0)
             impact_score = spectrum_data.get("impact_score", 0)
-            # Apply vote: support = add score, oppose = subtract score
-            adjusted_score = partisan_score * impact_score * vote_value
-            spectrum_scores[spectrum_name].append(adjusted_score)
 
-        # Process categories (determine left/right leaning based on vote analysis)
-        voting_analysis = bill_analysis.get("voting_analysis", {})
+            spectrum_votes[spectrum_name].append(
+                {
+                    "bill_id": bill_id,
+                    "vote": vote,
+                    "vote_value": vote_value,
+                    "key_provisions": key_provisions,
+                    "partisan_score": partisan_score,
+                    "impact_score": impact_score,
+                    "weighted_score": partisan_score * impact_score * vote_value,
+                }
+            )
+
+        # Process categories - single iteration
         political_categories = bill_analysis.get("political_categories", {})
 
+        # Primary category
         primary_category = political_categories.get("primary", {})
-        if primary_category and voting_analysis:
-            if isinstance(primary_category, dict):
-                category_name = primary_category.get("name", "")
-                partisan_score = primary_category.get("partisan_score", 0.0)
-                impact_score = primary_category.get("impact_score", 0.0)
+        if isinstance(primary_category, dict) and primary_category.get("name"):
+            category_name = primary_category.get("name", "")
+            partisan_score = primary_category.get("partisan_score", 0.0)
+            impact_score = primary_category.get("impact_score", 0.0)
+            weighted_score = partisan_score * impact_score * vote_value
 
-                if category_name:
-                    # Determines legislator alignment by multiplying vote direction (-1, 1, 0) with
-                    # partisan score (-1 to 1) and impact score (0 to 1)
-                    weighted_alignment = partisan_score * impact_score * vote_value
-                    primary_category_scores[category_name].append(weighted_alignment)
-                    main_category_scores[category_name].append(weighted_alignment)
-            else:
-                print(
-                    f"WARNING: Unexpected primary category format: {bill_id} - {primary_category}"
-                )
+            vote_data = {
+                "bill_id": bill_id,
+                "vote": vote,
+                "vote_value": vote_value,
+                "key_provisions": key_provisions,
+                "partisan_score": partisan_score,
+                "impact_score": impact_score,
+                "weighted_score": weighted_score,
+            }
 
-        secondary_categories = political_categories.get("secondary", [])
-        for secondary_category in secondary_categories:
-            if isinstance(secondary_category, dict):
+            primary_category_votes[category_name].append(vote_data)
+            main_category_votes[category_name].append(vote_data)
+
+        # Secondary categories
+        for secondary_category in political_categories.get("secondary", []):
+            if isinstance(secondary_category, dict) and secondary_category.get("name"):
                 category_name = secondary_category.get("name", "")
                 partisan_score = secondary_category.get("partisan_score", 0.0)
                 impact_score = secondary_category.get("impact_score", 0.0)
+                weighted_score = partisan_score * impact_score * vote_value
 
-                if category_name:
-                    # Determines legislator alignment by multiplying vote direction (-1, 1, 0) with
-                    # partisan score (-1 to 1) and impact score (0 to 1)
-                    weighted_alignment = partisan_score * impact_score * vote_value
-                    secondary_category_scores[category_name].append(weighted_alignment)
-                    main_category_scores[category_name].append(weighted_alignment)
-            else:
-                print(
-                    f"WARNING: Unexpected secondary category format: {bill_id } - {secondary_category}"
-                )
+                vote_data = {
+                    "bill_id": bill_id,
+                    "vote": vote,
+                    "vote_value": vote_value,
+                    "key_provisions": key_provisions,
+                    "partisan_score": partisan_score,
+                    "impact_score": impact_score,
+                    "weighted_score": weighted_score,
+                }
 
-        subcategories = political_categories.get("subcategories", [])
-        for subcategory in subcategories:
-            if isinstance(subcategory, dict):
+                secondary_category_votes[category_name].append(vote_data)
+                main_category_votes[category_name].append(vote_data)
+
+        # Subcategories
+        for subcategory in political_categories.get("subcategories", []):
+            if isinstance(subcategory, dict) and subcategory.get("name"):
                 category_name = subcategory.get("name", "")
                 partisan_score = subcategory.get("partisan_score", 0.0)
                 impact_score = subcategory.get("impact_score", 0.0)
+                weighted_score = partisan_score * impact_score * vote_value
 
-                if category_name:
-                    # Determines legislator alignment by multiplying vote direction (-1, 1, 0) with
-                    # partisan score (-1 to 1) and impact score (0 to 1)
-                    weighted_alignment = partisan_score * impact_score * vote_value
-                    subcategory_scores[category_name].append(weighted_alignment)
-            else:
-                print(
-                    f"WARNING: Unexpected subcategory format: {bill_id} - {subcategory}"
+                subcategory_votes[category_name].append(
+                    {
+                        "bill_id": bill_id,
+                        "vote": vote,
+                        "vote_value": vote_value,
+                        "key_provisions": key_provisions,
+                        "partisan_score": partisan_score,
+                        "impact_score": impact_score,
+                        "weighted_score": weighted_score,
+                    }
                 )
 
-    # Calculate final scores
-    final_spectrum_scores = {}
-    for spectrum_name, scores in spectrum_scores.items():
-        if scores:
-            final_spectrum_scores[spectrum_name] = round(sum(scores) / len(scores), 3)
-
-    # Calculate category classifications
-    primary_final = {}
-    for category, alignments in primary_category_scores.items():
-        if alignments:
-            avg_score = sum(alignments) / len(alignments)
-            primary_final[category] = avg_score
-    secondary_final = {}
-    for category, alignments in secondary_category_scores.items():
-        if alignments:
-            avg_score = sum(alignments) / len(alignments)
-            secondary_final[category] = avg_score
-    subcategory_final = {}
-    for category, alignments in subcategory_scores.items():
-        if alignments:
-            avg_score = sum(alignments) / len(alignments)
-            subcategory_final[category] = avg_score
-    main_final = {}
-    for category, alignments in main_category_scores.items():
-        if alignments:
-            avg_score = sum(alignments) / len(alignments)
-            main_final[category] = avg_score
-
     return {
-        "spectrum_scores": final_spectrum_scores,
-        "main_category_classifications": main_final,
-        "primary_category_classifications": primary_final,
-        "secondary_category_classifications": secondary_final,
-        "subcategory_classifications": subcategory_final,
+        "spectrum_scores": calculate_average_scores(spectrum_votes),
+        "main_category_classifications": calculate_average_scores(main_category_votes),
+        "primary_category_classifications": calculate_average_scores(
+            primary_category_votes
+        ),
+        "secondary_category_classifications": calculate_average_scores(
+            secondary_category_votes
+        ),
+        "subcategory_classifications": calculate_average_scores(subcategory_votes),
         "vote_count": len(
             [
                 v
@@ -240,8 +164,12 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
                 if v.get("vote", "").lower() not in ["not voting", "present", ""]
             ]
         ),
-        "spectrum_impacts": spectrum_impacts,
-        "category_impacts": category_impacts,
+        "spectrum_impacts": spectrum_votes,
+        "category_impacts": {
+            **primary_category_votes,
+            **secondary_category_votes,
+            **subcategory_votes,
+        },
     }
 
 
@@ -291,8 +219,8 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
         "subcategories": ideology_data["subcategory_classifications"],
         "detailed_spectrums": ideology_data["spectrum_scores"],
         "vote_count": ideology_data["vote_count"],
-        "spectrum_impacts": ideology_data["spectrum_impacts"], 
-        "category_impacts": ideology_data["category_impacts"], 
+        "spectrum_impacts": ideology_data["spectrum_impacts"],
+        "category_impacts": ideology_data["category_impacts"],
     }
 
     return profile
