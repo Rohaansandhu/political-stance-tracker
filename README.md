@@ -10,6 +10,16 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
+**LLM API Key Required:**
+To use the bill analysis features, you must create your own [OpenRouter](https://openrouter.ai/) API key and set it as an environment variable. This allows you to use the LLM of your choice for bill analysis.
+
+1. Sign up at [OpenRouter](https://openrouter.ai/) and obtain your API key.
+2. Set your API key in your .env file or run this (replace `YOUR_API_KEY`):
+	```bash
+	export OPENROUTER_API_KEY=YOUR_API_KEY
+	```
+3. You can now use the LLM-powered scripts in this project.
+
 Make sure the congress project is cloned as a submodule inside this repo.
 Follow the [congress repo instructions](https://github.com/unitedstates/congress) to download all necessary packages and tools.
 

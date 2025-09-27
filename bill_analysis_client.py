@@ -47,8 +47,6 @@ def load_political_frameworks():
     
     return categories, spectrums
 
-# TODO: Determine which free model to use: openai/gpt-oss-120b:free, nvidia/nemotron-nano-9b-v2:free, 
-# deepseek/deepseek-chat-v3.1:free, google/gemma-3n-e2b-it:free, x-ai/grok-4-fast:free
 def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
     """
     Analyze a political bill and return structured JSON classification.

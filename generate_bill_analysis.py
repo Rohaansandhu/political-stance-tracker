@@ -7,6 +7,12 @@ import bill_analysis_client
 # Path to the congress repo data directory
 CONGRESS_DATA_DIR = Path("data")
 
+# MODEL CHOICE
+# Free options: x-ai/grok-4-fast:free, deepseek/deepseek-chat-v3.1:free, google/gemini-2.0-flash-exp:free, 
+# openai/gpt-oss-120b:free, z-ai/glm-4.5-air:free
+# Using grok 4 since it's free and performs well, would prefer to use open source models in the future
+MODEL = "x-ai/grok-4-fast:free"  
+
 def check_schema_version(bill_analysis_file):
     """Check if existing analysis has current schema version."""
     try:
@@ -81,8 +87,7 @@ def generate_bill_analyses(force=False):
                     continue
 
                 # Call LLM Client
-                # Using grok for now, because gpt-oss was not working
-                bill_analysis = bill_analysis_client.analyze_bill(summary_text, model="x-ai/grok-4-fast:free")
+                bill_analysis = bill_analysis_client.analyze_bill(summary_text, model=MODEL)
 
                 # Write analysis to folder
                 out_file = folder / "bill_analysis.json"
