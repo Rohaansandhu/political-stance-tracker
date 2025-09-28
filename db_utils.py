@@ -1,5 +1,4 @@
 from pymongo import ASCENDING, MongoClient
-from pymongo.errors import DuplicateKeyError
 from start_mongod import PORT
 import os
 
@@ -7,7 +6,7 @@ import os
 MONGO_URI = os.getenv("MONGO_URI", f"mongodb://localhost:{PORT}/")
 DB_NAME = os.getenv("DB_NAME", "political_stance_tracker")
 
-COLLECTION_LIST = ["bill_data", "bill_analyses", "votes"]
+COLLECTION_LIST = ["bill_data", "bill_analyses", "rollcall_votes", "member_votes"]
 
 
 def get_db():

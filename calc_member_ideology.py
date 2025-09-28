@@ -352,7 +352,7 @@ def load_bill_analyses():
                 with open(analysis_file, "r") as f:
                     analysis_data = json.load(f)
 
-                # Congress + folder = id, ex. 119 + hr26 = 119hr26
+                # Congress + folder = id, ex. 119 + hr26 = hr25-119
                 bill_id = folder.name + "-" + congress.name
 
                 bill_analyses[bill_id] = analysis_data

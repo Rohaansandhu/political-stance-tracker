@@ -81,17 +81,40 @@ def load_votes():
                 if data_file.exists():
                     try:
                         data = load_json_file(data_file)
-                        db_utils.update_one("votes", data, "vote_id")
+                        db_utils.update_one("rollcall_votes", data, "vote_id")
                         count += 1
                     except Exception as e:
                         print(f"Failed to load {data_file}: {e}")
 
     print(f"Inserted {count} vote files from all congress folders into the database.")
 
+def load_member_organized_votes():
+    """
+    Loads all votes of each member from data/organized_votes and inserts them into the 'member_votes' collection in the db
+    """
+    organized_dir = DATA_DIR / "organized_votes"
+    if not organized_dir.exists():
+        print(f"Directory {organized_dir} does not exist.")
+        return
+
+    count = 0
+    for member_file in organized_dir.iterdir():
+        if member_file.suffix != ".json":
+            continue
+        try:
+            member_data = load_json_file(member_file)
+            db_utils.update_one("member_votes", member_data, "member_id")
+            count += 1
+        except Exception as e:
+            print(f"Failed to load {member_file}: {e}")
+
+    print(f"Inserted {count} member-organized vote files into the database.")
 
 def main():
+    print("Loading all data found in data/ into the database...")
     load_votes()
     load_bills_and_analyses()
+    load_member_organized_votes()
 
 
 if __name__ == "__main__":
