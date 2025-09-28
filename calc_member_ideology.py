@@ -194,7 +194,7 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
     Create complete legislator ideology profile.
 
     Args:
-        legislator_info (dict): Basic info {"id": "A000360", "name": "Rep. X", "party": "D", "state": "CA"}
+        legislator_info (dict): Basic info {"member_id": "A000360", "name": "Rep. X", "party": "D", "state": "CA"}
         legislator_votes (list): Vote records
         bill_analyses (dict): Bill analysis results
 
@@ -208,7 +208,7 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
     standard_scores = standardize_spectrum_scores(ideology_data["spectrum_scores"])
 
     profile = {
-        "id": legislator_info.get("id"),
+        "member_id": legislator_info.get("member_id"),
         "name": legislator_info.get("name"),
         "party": legislator_info.get("party"),
         "state": legislator_info.get("state"),
@@ -219,8 +219,8 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
         "subcategories": ideology_data["subcategory_classifications"],
         "detailed_spectrums": ideology_data["spectrum_scores"],
         "vote_count": ideology_data["vote_count"],
-        "spectrum_impacts": ideology_data["spectrum_impacts"],
-        "category_impacts": ideology_data["category_impacts"],
+        # "spectrum_impacts": ideology_data["spectrum_impacts"],
+        # "category_impacts": ideology_data["category_impacts"],
     }
 
     return profile
@@ -279,7 +279,7 @@ def standardize_spectrum_scores(spectrum_scores):
 
 def build_legislator_info(legislator_data):
     legislator_info = {
-        "id": legislator_data.get("id"),
+        "member_id": legislator_data.get("member_id"),
         "name": legislator_data.get("name"),
         "party": legislator_data.get("party"),
         "state": legislator_data.get("state"),
@@ -307,7 +307,7 @@ def process_all_legislators(bill_analyses):
         )
         profiles.append(profile)
 
-        output_file = OUTPUT_DIR / f"{profile['id']}.json"
+        output_file = OUTPUT_DIR / f"{profile['member_id']}.json"
         with open(output_file, "w") as f:
             json.dump(profile, f, indent=2)
 
@@ -353,7 +353,7 @@ def load_bill_analyses():
                     analysis_data = json.load(f)
 
                 # Congress + folder = id, ex. 119 + hr26 = 119hr26
-                bill_id = congress.name + folder.name
+                bill_id = folder.name + "-" + congress.name
 
                 bill_analyses[bill_id] = analysis_data
 

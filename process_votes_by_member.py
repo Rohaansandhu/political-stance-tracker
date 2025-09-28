@@ -84,7 +84,7 @@ def process_votes():
 
                         if member_id not in member_votes:
                             member_votes[member_id] = {
-                                "id": member_id,
+                                "member_id": member_id,
                                 "name": name,
                                 "party": party,
                                 "state": state,
