@@ -12,14 +12,14 @@ def build_bill_id(bill: dict) -> str:
     """
     Turn a bill object into a string for id.
     Example: {"congress":119,"number":242,"type":"hres"}
-             -> "119hres242"
+             -> "hres242-119"
     """
     if bill == {}:
         return ""
     congress = bill["congress"]
     number = bill["number"]
-    btype = bill["type"].lower()  # ensure lowercase
-    return f"{congress}{btype}{number}"
+    btype = bill["type"]
+    return "%s%s-%s" % (btype, number, congress)
 
 
 def calculate_average_scores(vote_data_dict):

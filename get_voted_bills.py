@@ -8,6 +8,7 @@ from pathlib import Path
 # Path to the congress repo data directory
 CONGRESS_DATA_DIR = Path("data")
 
+
 def mark_bill_as_voted(folder_location):
     """
     Mark a bill as voted by adding a txt file.
@@ -16,7 +17,9 @@ def mark_bill_as_voted(folder_location):
     """
     file_path = folder_location / "voted_bill.txt"
     with open(file_path, "w") as f:
-        f.write(f"processed: {datetime.datetime.now(datetime.timezone.utc).isoformat()}Z")
+        f.write(
+            f"processed: {datetime.datetime.now(datetime.timezone.utc).isoformat()}Z"
+        )
 
 
 def fetch_bill_status(bill_id: str, congress: str):
@@ -29,7 +32,7 @@ def fetch_bill_status(bill_id: str, congress: str):
         "govinfo",
         "--bulkdata=BILLSTATUS",
         f"--congress={congress}",
-        f"--filter={bill_id_regex}"
+        f"--filter={bill_id_regex}",
     ]
 
     try:
@@ -40,10 +43,11 @@ def fetch_bill_status(bill_id: str, congress: str):
         print("Command failed:", e)
         return False
 
-def build_bill_id(bill: dict) -> str:
+
+def build_billstatus_id(bill: dict) -> str:
     """
     Turn a bill object into a filter string for usc-run.
-    Example: {"congress":119,"number":242,"type":"hres"} 
+    Example: {"congress":119,"number":242,"type":"hres"}
              -> "BILLSTATUS-119hres242"
     """
     congress = bill["congress"]
@@ -51,14 +55,12 @@ def build_bill_id(bill: dict) -> str:
     btype = bill["type"].lower()  # ensure lowercase
     return f"BILLSTATUS-{congress}{btype}{number}"
 
+
 def generate_bill_jsons(force=False):
-    """ Generate the data.json for every bill xml data pulled """
+    """Generate the data.json for every bill xml data pulled"""
 
     # Create command
-    cmd = [
-        "usc-run",
-        "bills"
-    ]
+    cmd = ["usc-run", "bills"]
 
     # Forces re-parsing of all data
     if force:
@@ -77,7 +79,7 @@ def get_bills(force=False):
     # Example path to roll call data: data/{congress}/votes/{year}
     for congress in CONGRESS_DATA_DIR.iterdir():
         if not congress.is_dir():
-            continue  
+            continue
 
         votes_dir = congress / "votes"
         if not votes_dir.exists():
@@ -100,7 +102,7 @@ def get_bills(force=False):
 
                 with open(data_file, "r") as f:
                     vote_data = json.load(f)
-                
+
                 # Filter out non-bill votes (votes for quorum or leadership)
                 if (bill := vote_data.get("bill", {})) == {}:
                     continue
@@ -111,7 +113,7 @@ def get_bills(force=False):
                     continue
 
                 # Build filter string
-                bill_id = build_bill_id(bill)
+                bill_id = build_billstatus_id(bill)
 
                 # Don't fetch duplicates
                 if bill_id in seen_bills:
@@ -125,29 +127,30 @@ def get_bills(force=False):
                 # Mark bill as voted if fetch bill status finished with no errors
                 if result:
                     # Construct bill folder file path and handle errors
-                    congress_dir = congress / "bills" 
-                    if not congress_dir.is_dir(): 
-                        print(f"WARNING: No bills folder in {congress}") 
-                        continue 
-                    bill_type_dir = congress_dir / bill["type"].lower() 
-                    if not bill_type_dir.is_dir(): 
-                        print(f"WARNING: No bill type folder in {bill_id}") 
-                        continue 
-                    bill_dir = bill_type_dir / (bill["type"].lower() + str(bill["number"])) 
-                    if not bill_dir.is_dir(): 
-                        print(f"WARNING: No specific bill folder in {bill_id}") 
+                    congress_dir = congress / "bills"
+                    if not congress_dir.is_dir():
+                        print(f"WARNING: No bills folder in {congress}")
+                        continue
+                    bill_type_dir = congress_dir / bill["type"].lower()
+                    if not bill_type_dir.is_dir():
+                        print(f"WARNING: No bill type folder in {bill_id}")
+                        continue
+                    bill_dir = bill_type_dir / (
+                        bill["type"].lower() + str(bill["number"])
+                    )
+                    if not bill_dir.is_dir():
+                        print(f"WARNING: No specific bill folder in {bill_id}")
                         continue
 
                     mark_bill_as_voted(bill_dir)
 
                 seen_bills.add(bill_id)
-    
+
     # Generate data.json files for all bill xml data pulled
     if force:
         generate_bill_jsons(True)
     else:
         generate_bill_jsons(False)
-
 
 
 if __name__ == "__main__":
