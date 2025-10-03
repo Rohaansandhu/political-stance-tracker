@@ -145,10 +145,10 @@ def load_legislator_profiles():
 
 def main():
     print("Loading all data found in data/ into the database...")
-    load_votes()
+    # load_votes()
     load_bills_and_analyses()
-    load_member_organized_votes()
-    load_legislator_profiles()
+    # load_member_organized_votes()
+    # load_legislator_profiles()
 
 
 if __name__ == "__main__":

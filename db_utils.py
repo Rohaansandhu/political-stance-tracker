@@ -1,6 +1,10 @@
+from dotenv import load_dotenv
 from pymongo import ASCENDING, MongoClient
 from start_mongod import PORT
 import os
+
+# Load environment variables once when module is imported
+load_dotenv()
 
 # Specify your own DB name and MONGO_URI in .env or here
 MONGO_URI = os.getenv("MONGO_URI", f"mongodb://localhost:{PORT}/")
