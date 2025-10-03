@@ -62,35 +62,36 @@ usc-run votes [--congress=NUM] [--session=NUM] [--sessions=LIST] [--force] [--fa
 ```
 Make sure you run these commands in the top-level directory so the data populates in the correct folder.
 
-### 1. Fetch Current Legislators
-Downloads the latest legislator information and saves it locally as JSON:
-```bash
-python3 get_current_legislators.py
-```
-Output: `data/current-legislators.json`
 
-### 2. Process Votes by Member
-Parses all roll call votes for the current Congress and outputs one JSON file per legislator containing their voting record:
+### 1. Process Votes by Member
+Organizes roll call votes by member, from either the data/ directory or MongoDB, and outputs to data/organized_votes or MongoDB.
 ```bash
-python3 process_votes_by_member.py
+python3 process_votes_by_member.py [--input] [--output]
 ```
-Output: `data/organized_votes/{member_id}.json`
+Options:
+- `--input`: Source of roll call votes (`mongodb`, `data`, or `both`).
+- `--output`: Store to (`mongodb`, `data`, or `both`).
+Output: `data/organized_votes/{member_id}.json` and/or MongoDB 'member_votes' collection.
 
-### 3. Get Voted Bills
+### 2. Get Voted Bills
 Fetches bill status for all bills that have been voted on and marks them accordingly. Also generates `data.json` files for bill XML data.
 ```bash
 python3 get_voted_bills.py [--force]
 ```
 Use `--force` to re-download and re-parse all bill data.
 
-### 4. Generate Bill Analyses
-Analyzes bills using an LLM and generates a `bill_analysis.json` for each voted bill.
+### 3. Generate Bill Analyses
+Analyzes bills using an LLM and generates a `bill_analysis.json` for each voted bill. Can process bills from local files, MongoDB, or both.
 ```bash
-python3 generate_bill_analysis.py [--force]
+python3 generate_bill_analysis.py [--force] [--numOfBills N] [--no_db] [--only_db]
 ```
-Use `--force` to overwrite existing analyses.
+Options:
+- `--force`: Overwrite existing analyses and update outdated schemas.
+- `--numOfBills N`: Only process N bills (useful for testing or limiting API usage).
+- `--no_db`: Only process and save to data/ folder, do not load to/from the database.
+- `--only_db`: Only process bills from the database, skip local files.
 
-### 5. Calculate Member Ideology
+### 4. Calculate Member Ideology
 Processes all legislators and calculates ideology scores based on their voting records and bill analyses.
 ```bash
 python3 calc_member_ideology.py
@@ -98,7 +99,7 @@ python3 calc_member_ideology.py
 Output: `data/legislator_profiles/{member_id}.json`
 
 
-### 6. Member Ranking
+### 5. Member Ranking
 Ranks legislators by political spectrums and categories, generates summary reports and CSV exports.
 ```bash
 python3 member_ranking.py
@@ -108,7 +109,7 @@ Outputs:
 - `data/rankings/extremes_summary.json` (summary of most extreme legislators)
 - `data/rankings/csv/` (CSV exports)
 
-### 7. Visualize Rankings
+### 6. Visualize Rankings
 Generates plots and visualizations from the CSV ranking outputs. Plots are saved in `data/rankings/csv/plots/`.
 ```bash
 python3 visualize_rankings.py
@@ -117,6 +118,15 @@ Outputs:
 - Boxplots of ideological score distributions by party for each ranking
 - Scatter plots of rank vs. score, colored by party
 - All plots saved as PNG files in `data/rankings/csv/plots/`
+
+### 7. Load Data to Database
+Loads all data from the data/ directory into MongoDB collections. You can comment/uncomment functions in the script to control which collections are loaded.
+```bash
+python3 load_to_db.py
+```
+By default, loads bill data and analyses. You can also load votes, member-organized votes, and legislator profiles by uncommenting the relevant function calls in `main()`.
+Collections used:
+- `bill_data`, `bill_analyses`, `rollcall_votes`, `member_votes`, `legislator_profiles`
 
 ## Data Output
 All outputs are stored in the generated `data/` folder and its subdirectories.
