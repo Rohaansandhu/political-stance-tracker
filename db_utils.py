@@ -39,3 +39,9 @@ def update_many(collection_name: str, updates: list, query: dict):
     collection = db[collection_name]
     result = collection.update_many(query, {"$set": updates}, upsert=True)
     return result.modified_count
+
+
+def get_collection(collection_name: str):
+    """Return a reference to the specified collection."""
+    db = get_db()
+    return db[collection_name]
