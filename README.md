@@ -69,8 +69,8 @@ Organizes roll call votes by member, from either the data/ directory or MongoDB,
 python3 process_votes_by_member.py [--input] [--output]
 ```
 Options:
-- `--input`: Source of roll call votes (`mongodb`, `data`, or `both`).
-- `--output`: Store to (`mongodb`, `data`, or `both`).
+- `--input`: Source of roll call votes (`mongodb`, `data`, or `both`). Ex: --input mongodb
+- `--output`: Store to (`mongodb`, `data`, or `both`). Ex: --output data
 Output: `data/organized_votes/{member_id}.json` and/or MongoDB 'member_votes' collection.
 
 ### 2. Get Voted Bills
