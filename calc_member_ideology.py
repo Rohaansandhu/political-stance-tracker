@@ -1,11 +1,16 @@
+import argparse
 import json
 from collections import defaultdict
 from pathlib import Path
+import db_utils
+
 
 DATA_DIR = Path("data")
 MEMBER_VOTES_DIR = Path("data/organized_votes")
+INPUT_COLLECTION = "bill_analyses"
 OUTPUT_DIR = Path("data/legislator_profiles")
 OUTPUT_DIR.mkdir(exist_ok=True)
+OUTPUT_COLLECTION = "legislator_profiles"
 
 
 def build_bill_id(bill: dict) -> str:
@@ -287,37 +292,43 @@ def build_legislator_info(legislator_data):
     return legislator_info
 
 
-def process_all_legislators(bill_analyses):
+def process_all_legislators(bill_analyses, input="mongodb"):
     """Process ideology scores for all legislators"""
 
     profiles = []
-    # iterate over each legislator
-    for legislator_file in MEMBER_VOTES_DIR.iterdir():
-        if legislator_file.suffix != ".json":
-            continue
+    if input == "data":
+        # iterate over each legislator
+        for legislator_file in MEMBER_VOTES_DIR.iterdir():
+            if legislator_file.suffix != ".json":
+                continue
 
-        with open(legislator_file, "r") as f:
-            legislator_data = json.load(f)
+            with open(legislator_file, "r") as f:
+                legislator_data = json.load(f)
 
-        legislator_info = build_legislator_info(legislator_data)
-        legislator_votes = legislator_data.get("votes", [])
+            legislator_info = build_legislator_info(legislator_data)
+            legislator_votes = legislator_data.get("votes", [])
 
-        profile = create_legislator_profile(
-            legislator_info, legislator_votes, bill_analyses
-        )
-        profiles.append(profile)
+            profile = create_legislator_profile(
+                legislator_info, legislator_votes, bill_analyses
+            )
+            profiles.append(profile)
+    else:
+        # Get collection
+        member_votes_col = db_utils.get_collection("member_votes")
+        for legislator_data in member_votes_col.find():
+            legislator_info = build_legislator_info(legislator_data)
+            legislator_votes = legislator_data.get("votes", [])
 
-        output_file = OUTPUT_DIR / f"{profile['member_id']}.json"
-        with open(output_file, "w") as f:
-            json.dump(profile, f, indent=2)
-
-        print(f"Processed {profile['name']} ({profile['vote_count']} votes)")
+            profile = create_legislator_profile(
+                legislator_info, legislator_votes, bill_analyses
+            )
+            profiles.append(profile)
 
     return profiles
 
 
-def load_bill_analyses():
-    """Load a dictionary of all bill analyses"""
+def load_bill_analyses_from_data():
+    """Load a dictionary of all bill analyses from data/ directory"""
     bill_analyses = {}
 
     for congress in DATA_DIR.iterdir():
@@ -359,12 +370,78 @@ def load_bill_analyses():
 
     return bill_analyses
 
+def load_bill_analyses_from_db():
+    """Load a dictionary of all bill analyses from MongoDB"""
+    bill_analyses = {}
+    collection = db_utils.get_collection(INPUT_COLLECTION)
 
-# Example usage
+    for analysis_data in collection.find():
+        bill_id = analysis_data.get("bill_id")
+        if bill_id:
+            bill_analyses[bill_id] = analysis_data
+
+    return bill_analyses
+
+
+def write_profiles_to_db(profiles):
+    """Write legislator profiles to MongoDB collection."""
+    count = 0
+    for profile in profiles:
+        try:
+            db_utils.update_one(OUTPUT_COLLECTION, profile, "member_id")
+            count += 1
+        except Exception as e:
+            print(f"Failed to insert/update profile for {profile['name']}: {e}")
+    print(f"Updated profile for {count} members")
+
+
+def write_profiles_to_json(profiles):
+    """Write legislator profiles to JSON files in data/legislator_profiles."""
+    count = 0
+    for profile in profiles:
+        output_file = OUTPUT_DIR / f"{profile['member_id']}.json"
+        try:
+            with open(output_file, "w") as f:
+                json.dump(profile, f, indent=2)
+            count += 1
+        except Exception as e:
+            print(f"Failed to write profile for {profile['name']} to file: {e}")
+    print(f"Updated profile for {count} members")
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--input",
+        choices=["mongodb", "data"],
+        default="mongodb",
+        help="Source of bill analyses: MongoDB or data/. Specify --input mongodb or --input data",
+    )
+    parser.add_argument(
+        "--output",
+        choices=["mongodb", "data"],
+        default="mongodb",
+        help="Store to MongoDB or data/. Specify --output mongodb or --output data",
+    )
 
-    # Load your bill analyses
-    bill_analyses = load_bill_analyses()
+    args = parser.parse_args()
+
+
+    # Load bill analyses
+    if args.input == "data":
+        bill_analyses = load_bill_analyses_from_data()
+    else:
+        bill_analyses = load_bill_analyses_from_db()
+
 
     # Process all legislators
-    profiles = process_all_legislators(bill_analyses)
+    profiles = process_all_legislators(bill_analyses, args.input)
+
+    # Write profiles to specified output
+    if args.output == "data":
+        write_profiles_to_json(profiles)
+    elif args.output == "mongodb":
+        write_profiles_to_db(profiles)
+    else:
+        write_profiles_to_db(profiles)
+        write_profiles_to_json(profiles)
