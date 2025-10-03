@@ -2,6 +2,7 @@
 # United States Political Stance Tracker
 Analyzes voting records to show where US Congress Members stand on major political issues and spectrums. Built upon the amazing tools of [unitedstates/congress](https://github.com/unitedstates/congress).
 
+
 ## Setup
 Clone this repo and install dependencies in a virtual environment:
 ```bash
@@ -10,29 +11,56 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
-**LLM API Key Required:**
+### Congres Project Required!!!
+Make sure the congress project is cloned as a submodule inside this repo.
+Follow the [congress repo instructions](https://github.com/unitedstates/congress) to download all necessary packages and tools.
+
+### MongoDB Setup
+This project uses MongoDB to store and query vote and bill data. This is optional! With the correct flags on each script, you can continue to store data in the data/ directory only. You can start and stop the database using the provided scripts:
+
+**Start MongoDB:**
+```bash
+python3 start_mongod.py
+```
+This will start a local MongoDB server on port 27017 by default, with data stored in `data/db` and logs in `data/mongodlogs/`. Replica set support is available (see script for details).
+
+**Stop MongoDB:**
+```bash
+python3 stop_mongod.py
+```
+This will cleanly shut down the MongoDB server.
+
+You must have MongoDB installed and available in your system PATH. For more advanced configuration, feel free to edit `start_mongod.py`.
+
+### LLM API Key Required
 To use the bill analysis features, you must create your own [OpenRouter](https://openrouter.ai/) API key and set it as an environment variable. This allows you to use the LLM of your choice for bill analysis.
 
 1. Sign up at [OpenRouter](https://openrouter.ai/) and obtain your API key.
 2. Set your API key in your .env file or run this (replace `YOUR_API_KEY`):
-	```bash
-	export OPENROUTER_API_KEY=YOUR_API_KEY
-	```
+  ```bash
+  export OPENROUTER_API_KEY=YOUR_API_KEY
+  ```
 3. You can now use the LLM-powered scripts in this project.
-
-Make sure the congress project is cloned as a submodule inside this repo.
-Follow the [congress repo instructions](https://github.com/unitedstates/congress) to download all necessary packages and tools.
 
 ## Usage
 
 ### 0. Fetch Roll Call Data
-Using the [unitedstates/congress](https://github.com/unitedstates/congress) submodule, run:
-```bash
-usc-run votes
-```
-Output: `data/{congress}/votes`
+Run the following script to fetch roll call vote data and automatically load it into the database:
 
-This will download all voting roll call data. You can specify congress or session with the --congress or --session flags. Please make sure you run this command in the top-level directory so the data populates in the correct folder.
+```bash
+python3 get_votes.py [--no_db] [--congress=NUM] [--session=NUM] [--sessions=LIST] [--force] [--fast]
+```
+- `--no_db`: Only process and save to the `data/` folder, do not load into the database.
+- `--congress`, `--session`, `--sessions`: Specify which congress/session(s) to fetch.
+- `--force`: Force re-download of all vote data.
+- `--fast`: Only pull data from the last 3 days.
+
+This script internally calls the `usc-run votes` command, which downloads all voting roll call data into the `data/{congress}/votes` directory.  
+You can also run `usc-run votes` directly with its options if you prefer:
+```bash
+usc-run votes [--congress=NUM] [--session=NUM] [--sessions=LIST] [--force] [--fast]
+```
+Make sure you run these commands in the top-level directory so the data populates in the correct folder.
 
 ### 1. Fetch Current Legislators
 Downloads the latest legislator information and saves it locally as JSON:
