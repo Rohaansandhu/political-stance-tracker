@@ -1,3 +1,5 @@
+# Script to load all data from the data/ directory into the MongoDB database.
+# Feel free to comment out functions you don't want to run, each function corresponds to a collection
 import os
 import json
 from pathlib import Path
@@ -88,6 +90,7 @@ def load_votes():
 
     print(f"Inserted {count} vote files from all congress folders into the database.")
 
+
 def load_member_organized_votes():
     """
     Loads all votes of each member from data/organized_votes and inserts them into the 'member_votes' collection in the db
@@ -110,11 +113,36 @@ def load_member_organized_votes():
 
     print(f"Inserted {count} member-organized vote files into the database.")
 
+
+def load_legislator_profiles():
+    """
+    Loads all legislator profiles from data/legislator_profiles and inserts them into the 'legislator_profiles' collection in the db
+    """
+    profiles_dir = DATA_DIR / "legislator_profiles"
+    if not profiles_dir.exists():
+        print(f"Directory {profiles_dir} does not exist.")
+        return
+
+    count = 0
+    for profile_file in profiles_dir.iterdir():
+        if profile_file.suffix != ".json":
+            continue
+        try:
+            profile_data = load_json_file(profile_file)
+            db_utils.update_one("legislator_profiles", profile_data, "member_id")
+            count += 1
+        except Exception as e:
+            print(f"Failed to load {profile_file}: {e}")
+
+    print(f"Inserted {count} legislator profile files into the database.")
+
+
 def main():
     print("Loading all data found in data/ into the database...")
     load_votes()
     load_bills_and_analyses()
     load_member_organized_votes()
+    load_legislator_profiles()
 
 
 if __name__ == "__main__":
