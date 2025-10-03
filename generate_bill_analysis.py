@@ -11,9 +11,9 @@ CONGRESS_DATA_DIR = Path("data")
 
 # MODEL CHOICE
 # Free options: x-ai/grok-4-fast:free, deepseek/deepseek-chat-v3.1:free, google/gemini-2.0-flash-exp:free,
-# openai/gpt-oss-120b:free, z-ai/glm-4.5-air:free
-# Using grok 4 since it's free and performs well, would prefer to use open source models in the future
-MODEL = "x-ai/grok-4-fast:free"
+# openai/gpt-oss-120b:free, z-ai/glm-4.5-air:free openai/gpt-oss-20b:free, meta-llama/llama-3.3-8b-instruct:free
+# Using gemini-2.5-flash-lite because of openrouter rate-limiting on free models
+MODEL = "gemini-2.5-flash-lite"
 
 
 def check_schema_version(bill_analysis_file):
@@ -94,14 +94,18 @@ def generate_bill_analyses(force=False, num_of_bills=None, no_db=False, only_db=
                         summary_text, model=MODEL
                     )
 
-                    out_file = folder / "bill_analysis.json"
-                    with open(out_file, "w") as f:
-                        json.dump(bill_analysis, f, indent=2)
-
                     # bill_id for a file found in data/117/bills/hr/hr1 is hr1-117
                     # Add bill_id to data
                     bill_id = bill_data["bill_id"]
                     bill_analysis["bill_id"] = bill_id
+                    # Add model info to data
+                    bill_analysis["model"] = MODEL
+
+                    # Write data
+                    out_file = folder / "bill_analysis.json"
+                    with open(out_file, "w") as f:
+                        json.dump(bill_analysis, f, indent=2)
+
                     generated_bills.add(bill_id)
                     print(f"{bill_id} bill analysis generated")
 
