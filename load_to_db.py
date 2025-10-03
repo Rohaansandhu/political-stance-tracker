@@ -50,7 +50,9 @@ def load_bills_and_analyses():
                 try:
                     analysis_obj = load_json_file(analysis_file)
                     # bill_id for a file found in data/117/bills/hr/hr1 is hr1-117
-                    analysis_obj["bill_id"] = sub_dir.name + "-" + congress_dir.name
+                    # Set bill id if not found
+                    if not analysis_obj.get("bill_id"):
+                        analysis_obj["bill_id"] = sub_dir.name + "-" + congress_dir.name
                     # Ensure we only put the most updated bill analyses in the db
                     if analysis_obj.get("schema_version") != SCHEMA_VERSION:
                         bill_id = analysis_obj["bill_id"]
