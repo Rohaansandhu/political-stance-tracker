@@ -59,7 +59,7 @@ def rank_legislators_by_spectrum(legislators, spectrum_name, spectrum_type="deta
         if spectrum_name in score_dict:
             score = score_dict[spectrum_name]
             legislator_info = {
-                "id": legislator.get("id"),
+                "member_id": legislator.get("member_id"),
                 "name": legislator.get("name"),
                 "party": legislator.get("party"),
                 "state": legislator.get("state"),
@@ -87,7 +87,7 @@ def export_overall_scores_csv(legislators):
     for legislator in legislators:
         scores = legislator.get("scores", {})
         rows.append({
-            "id": legislator.get("id"),
+            "member_id": legislator.get("member_id"),
             "name": legislator.get("name"),
             "party": legislator.get("party"),
             "state": legislator.get("state"),
@@ -232,7 +232,7 @@ def create_csv_exports(rankings):
             csv_data.append({
                 "rank": rank,
                 "name": legislator_info["name"],
-                "id": legislator_info["id"],
+                "member_id": legislator_info["member_id"],
                 "party": legislator_info["party"],
                 "state": legislator_info["state"],
                 "score": round(score, 4),
