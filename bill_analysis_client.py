@@ -4,14 +4,16 @@ from dotenv import load_dotenv
 import os
 import json
 
-# Load environment variables once when module is imported
-load_dotenv()
-
-# Initialize client once when module is imported
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-)
+def get_openai_client():
+    """Open client connection"""
+    global client
+    if client is None:
+        load_dotenv()
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+        )
+    return client
 
 # Update Schema after every change to prompts
 SCHEMA_VERSION = 2
@@ -169,6 +171,7 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
             is_retry = attempt > 0
             user_prompt = create_user_prompt(is_retry, last_response)
             
+            client = get_openai_client()
             # Use temperature of 0 for deterministic output
             completion = client.chat.completions.create(
                 extra_body={},

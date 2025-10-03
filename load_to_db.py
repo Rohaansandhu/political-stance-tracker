@@ -3,6 +3,7 @@
 import os
 import json
 from pathlib import Path
+from bill_analysis_client import SCHEMA_VERSION
 import db_utils
 
 DATA_DIR = Path("data")
@@ -50,6 +51,11 @@ def load_bills_and_analyses():
                     analysis_obj = load_json_file(analysis_file)
                     # bill_id for a file found in data/117/bills/hr/hr1 is hr1-117
                     analysis_obj["bill_id"] = sub_dir.name + "-" + congress_dir.name
+                    # Ensure we only put the most updated bill analyses in the db
+                    if analysis_obj.get("schema_version") != SCHEMA_VERSION:
+                        bill_id = analysis_obj["bill_id"]
+                        print(f"{bill_id} has an outdated schema")
+                        continue
                     db_utils.update_one("bill_analyses", analysis_obj, "bill_id")
                 except Exception as e:
                     print(f"Failed to load {analysis_file}: {e}")
