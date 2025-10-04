@@ -1,19 +1,22 @@
 import argparse
 import time
-import json
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 import bill_analysis_client
 import db_utils
-from load_to_db import load_bills_and_analyses
+
+load_dotenv()
 
 # Path to the congress repo data directory
 CONGRESS_DATA_DIR = Path("data")
 
-# MODEL CHOICE
+# MODEL CHOICE (Specify in environment variables, or here)
 # Free options: x-ai/grok-4-fast:free, deepseek/deepseek-chat-v3.1:free, google/gemini-2.0-flash-exp:free,
 # openai/gpt-oss-120b:free, z-ai/glm-4.5-air:free openai/gpt-oss-20b:free, meta-llama/llama-3.3-8b-instruct:free
 # Using gemini-2.5-flash-lite because of openrouter rate-limiting on free models
-MODEL = "gemini-2.5-flash-lite"
+# Using gpt-oss-120b with cerebras, due to poor partisan scoring with gemini
+MODEL = os.getenv("MODEL", "gpt-oss-120b")
 
 
 def check_requirements(bill_id, bill_analyses_coll):

@@ -7,9 +7,9 @@ import json
 # Load environment variables once when module is imported
 load_dotenv()
 
-# Determine which client to use:
-# openrouter or gemini
-CLIENT = "gemini"
+# Determine which client to use (Specify with env variable)
+# Currently supported clients: openrouter or gemini or cerebras
+CLIENT = os.getenv("CLIENT", "openrouter")
 
 # Initialize client once when module is imported
 if CLIENT == "openrouter":
@@ -21,6 +21,11 @@ elif CLIENT == "gemini":
     client = OpenAI(
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         api_key=os.getenv("GEMINI_API_KEY"),
+    )
+elif CLIENT == "cerebras":
+    client = OpenAI(
+        base_url="https://api.cerebras.ai/v1",
+        api_key=os.environ.get("CEREBRAS_API_KEY"),
     )
 
 # Update Schema after every change to prompts

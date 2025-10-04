@@ -33,19 +33,33 @@ This will cleanly shut down the MongoDB server.
 You must have MongoDB installed and available in your system PATH. For more advanced configuration, feel free to edit `start_mongod.py`.
 
 ### LLM API Key Required
-To use the bill analysis features, you must create your own [OpenRouter](https://openrouter.ai/) API key and set it as an environment variable. This allows you to use the LLM of your choice for bill analysis.
+To use the bill analysis features, you must create your own LLM API Key using one of the supported providers:
+[OpenRouter](https://openrouter.ai/), [Google Ai Studio](https://ai.google.dev/gemini-api/docs), [Cerebras](https://www.cerebras.ai/).
+This allows you to use the LLM of your choice for bill analysis.
 
-1. Sign up at [OpenRouter](https://openrouter.ai/) and obtain your API key.
-2. Set your API key in your .env file or run this (replace `YOUR_API_KEY`):
+1. Set your API key in your .env file (recommended) or run this (replace `YOUR_API_KEY` with the correct api key from your provider of choice):
   ```bash
   export OPENROUTER_API_KEY=YOUR_API_KEY
+  export GEMINI_API_KEY=YOUR_API_KEY
+  export CEREBRAS_API_KEY=YOUR_API_KEY
+  ```
+2. Also, depending on which provider you choose, you will need to specify the client: (`openrouter`, `gemini`, or `cerebras`)
+```bash
+  export CLIENT=YOUR_CLIENT_CHOICE
   ```
 3. You can now use the LLM-powered scripts in this project.
+4. (Optional) All providers are accessed through the OpenAI Client Libraries. If you wish, you can find another provider with this library and add it to bill_analysis_client.py with ease.
 
-**UPDATE:** 
-Openrouter decided to enforce harsher limits on the free models, so I would recommend looking into other free/paid 
-model providers. I have decided to use [Google Ai Studio](https://ai.google.dev/gemini-api/docs) API keys, as their models 
-still have generous limits. You can add your API providers by editing bill_analysis_client.py
+
+### Environment Variables To Set
+Here is a list of all environment variables needed in this project:
+- `OPENROUTER_API_KEY` if you use openrouter
+- `GEMINI_API_KEY` if you use gemini
+- `CEREBRAS_API_KEY` if you use cerebras
+- `CLIENT` to specify between openrouter, gemini, and cerebras
+- `MODEL` to specify the model name from the client
+- `MONGO_URI` to specify the db instance
+- `DB_NAME` to specify the db name
 
 ## Usage
 
