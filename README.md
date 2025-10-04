@@ -15,8 +15,8 @@ pip install -r requirements.txt
 Make sure the congress project is cloned as a submodule inside this repo.
 Follow the [congress repo instructions](https://github.com/unitedstates/congress) to download all necessary packages and tools.
 
-### MongoDB Setup
-This project uses MongoDB to store and query vote and bill data. This is optional! With the correct flags on each script, you can continue to store data in the data/ directory only. You can start and stop the database using the provided scripts:
+### MongoDB Setup (Required!)
+This project uses MongoDB to store and query vote and bill data. However, you'll notice a lot of initial scripts (that pull data from congress) will still store to the data/ directory as well. You can start and stop the database using the provided scripts:
 
 **Start MongoDB:**
 ```bash
@@ -42,15 +42,19 @@ To use the bill analysis features, you must create your own [OpenRouter](https:/
   ```
 3. You can now use the LLM-powered scripts in this project.
 
+**UPDATE:** 
+Openrouter decided to enforce harsher limits on the free models, so I would recommend looking into other free/paid 
+model providers. I have decided to use [Google Ai Studio](https://ai.google.dev/gemini-api/docs) API keys, as their models 
+still have generous limits. You can add your API providers by editing bill_analysis_client.py
+
 ## Usage
 
 ### 0. Fetch Roll Call Data
 Run the following script to fetch roll call vote data and automatically load it into the database:
 
 ```bash
-python3 get_votes.py [--no_db] [--congress=NUM] [--session=NUM] [--sessions=LIST] [--force] [--fast]
+python3 get_votes.py [--congress=NUM] [--session=NUM] [--sessions=LIST] [--force] [--fast]
 ```
-- `--no_db`: Only process and save to the `data/` folder, do not load into the database.
 - `--congress`, `--session`, `--sessions`: Specify which congress/session(s) to fetch.
 - `--force`: Force re-download of all vote data.
 - `--fast`: Only pull data from the last 3 days.
@@ -64,40 +68,46 @@ Make sure you run these commands in the top-level directory so the data populate
 
 
 ### 1. Process Votes by Member
-Organizes roll call votes by member, from either the data/ directory or MongoDB, and outputs to data/organized_votes or MongoDB.
+Organizes roll call votes by member, from MongoDB, and outputs to MongoDB (or data/).
 ```bash
-python3 process_votes_by_member.py [--input] [--output]
+python3 process_votes_by_member.py [--writeData]
 ```
 Options:
-- `--input`: Source of roll call votes (`mongodb`, `data`, or `both`). Ex: --input mongodb
-- `--output`: Store to (`mongodb`, `data`, or `both`). Ex: --output data
+- `--writeData`: If specified will also store to the data/ folder
 
-Output: `data/organized_votes/{member_id}.json` and/or MongoDB 'member_votes' collection.
+Output: MongoDB 'member_votes' collection and/or `data/organized_votes/{member_id}.json` .
 
 ### 2. Get Voted Bills
-Fetches bill status for all bills that have been voted on and marks them accordingly. Also generates `data.json` files for bill XML data.
+Fetches bill status for all bills that have been voted on and marks them accordingly. Also generates `data.json` files for bill XML data. Automatically uploads bill data to MongoDB.
 ```bash
 python3 get_voted_bills.py [--force]
 ```
 Use `--force` to re-download and re-parse all bill data.
 
+Output: bill_data collection
+
 ### 3. Generate Bill Analyses
-Analyzes bills using an LLM and generates a `bill_analysis.json` for each voted bill. Can process bills from local files, MongoDB, or both.
+Analyzes bills using an LLM and generates a `bill_analysis.json` for each voted bill. Processes bills from MongoDB.
 ```bash
-python3 generate_bill_analysis.py [--force] [--numOfBills N] [--no_db] [--only_db]
+python3 generate_bill_analysis.py [--force] [--numOfBills num] 
 ```
 Options:
 - `--force`: Overwrite existing analyses and update outdated schemas.
-- `--numOfBills N`: Only process N bills (useful for testing or limiting API usage).
-- `--no_db`: Only process and save to data/ folder, do not load to/from the database.
-- `--only_db`: Only process bills from the database, skip local files.
+- `--numOfBills`: Only process num bills (useful for testing or limiting API usage).
+
+Output: MongoDB bill_analyses collection
 
 ### 4. Calculate Member Ideology
-Processes all legislators and calculates ideology scores based on their voting records and bill analyses.
+Processes all legislators and calculates ideology scores based on their voting records and bill analyses. Please specify model (required) and schema version of the bill analyses you want to use.
 ```bash
-python3 calc_member_ideology.py
+python3 calc_member_ideology.py [--model model] [--schema schema] [--data]
 ```
-Output: `data/legislator_profiles/{member_id}.json`
+Options:
+- `--model`: Specify the model to analyze data from
+- `--schema`: Specify the schema version to analyze data from (optional, will default to latest)
+- `--data`: Stores data to data/ (not recommended)
+
+Output: legislator_profiles collection or `data/legislator_profiles/{member_id}.json`
 
 
 ### 5. Member Ranking
@@ -120,14 +130,21 @@ Outputs:
 - Scatter plots of rank vs. score, colored by party
 - All plots saved as PNG files in `data/rankings/csv/plots/`
 
-### 7. Load Data to Database
+### Ensure Correct Indexes in MongoDB
+Ensures that all collections have the correct unique index restrictions.
+```bash
+python3 db_utils.py
+```
+
+### Load Data to Database (DEPRECATED)
 Loads all data from the data/ directory into MongoDB collections. You can comment/uncomment functions in the script to control which collections are loaded.
 ```bash
 python3 load_to_db.py
 ```
-By default, loads bill data and analyses. You can also load votes, member-organized votes, and legislator profiles by uncommenting the relevant function calls in `main()`.
 Collections used:
 - `bill_data`, `bill_analyses`, `rollcall_votes`, `member_votes`, `legislator_profiles`
+
+**UPDATE** All scripts have been updated to store directly to MongoDB. Certain functions in this script are still in use, and it is being kept for backwards compatability. However, anyone who clones the repo from now on, should not run this script.
 
 ## Data Output
 All outputs are stored in the generated `data/` folder and its subdirectories.
@@ -135,10 +152,8 @@ All outputs are stored in the generated `data/` folder and its subdirectories.
 ## Current State & TODOs
 This project is actively under development. The following features and improvements are planned or in progress:
 
-- **Store ideology outputs in a Relational DB:** Enhance query and graphing capabilities by creating rigid schemas, allowing for more complex data analysis. <br>
+- **Improve Data Collections in MongoDB** Create better schemas and collections for data processing in preparation for visualizations and summary statistics. <br>
   *Progress: Not started.*
-- **Use MongoDB to store raw data:** Improve data storage by storing the raw json outputs from both the Congress scrapers and the LLM into MongoDB. <br>
-  *Progress: Script to load existing data from data/ into the db has been created. Will add options for current scripts to output directly into db.*
 - **Refine bill analysis LLM prompts:** Improve the quality and consistency of bill analyses generated by the LLM. LLM responses vary by nature, but by creating a proper frame and structure, and by adjusting model temperatures, a more predictable and accurate response can be achieved. <br>
   *Progress:Added versioning to model prompts, put temperature at 0. Refined the categories and spectrums, gave partisan and impact scores to both.*
 - **Resolve data irregularities:** Address issues with current rankings and political stances to ensure accuracy and reliability. Spectrum ranges are extremely variable. Libertarian and Authoritarian leanings need to be implemented better. <br>

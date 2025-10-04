@@ -1,18 +1,13 @@
-# Script to load roll call votes using usc-run votes, 
-# then saves this vote data to the db automatically (unless specified otherwise)
+# Script to load roll call votes using usc-run votes,
+# then saves this vote data to the db automatically
 # Vote data must be saved to data/ since that is where the congress scraper outputs with usc-run
 import argparse
 import subprocess
 from load_to_db import load_votes
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Load all data from data/ into the database"
-    )
-    parser.add_argument(
-        "--no_db",
-        action="store_true",
-        help="Don't load the data to the db, just process and save to data/ folder",
-    )
+    parser = argparse.ArgumentParser()
+
     # usc-run specific arguments
     parser.add_argument(
         "--congress",
@@ -37,7 +32,6 @@ if __name__ == "__main__":
         help="Only pull from last 3 days",
     )
     args = parser.parse_args()
-    no_db = args.no_db
     congress = args.congress
     session = args.session
     sessions = args.sessions
@@ -63,9 +57,5 @@ if __name__ == "__main__":
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
     except subprocess.CalledProcessError as e:
         print("Command failed:", e)
-    
-    # Unless no_db flag is specified, load the votes to MongoDB as well
-    if not no_db:
-        load_votes()
-    
-    
+
+    load_votes()

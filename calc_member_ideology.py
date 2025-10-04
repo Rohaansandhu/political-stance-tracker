@@ -2,6 +2,7 @@ import argparse
 import json
 from collections import defaultdict
 from pathlib import Path
+from bill_analysis_client import SCHEMA_VERSION
 import db_utils
 
 
@@ -49,6 +50,8 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
     # Combined primary + secondary
     main_category_votes = defaultdict(list)
 
+    # Determined by the number of bills analyzed
+    vote_count = 0
     for vote_record in legislator_votes:
         bill_id = build_bill_id(vote_record.get("bill", {}))
         if bill_id == "":
@@ -151,6 +154,7 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
                         "weighted_score": weighted_score,
                     }
                 )
+        vote_count += 1
 
     return {
         "spectrum_scores": calculate_average_scores(spectrum_votes),
@@ -162,13 +166,7 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
             secondary_category_votes
         ),
         "subcategory_classifications": calculate_average_scores(subcategory_votes),
-        "vote_count": len(
-            [
-                v
-                for v in legislator_votes
-                if v.get("vote", "").lower() not in ["not voting", "present", ""]
-            ]
-        ),
+        "vote_count": vote_count,
         "spectrum_impacts": spectrum_votes,
         "category_impacts": {
             **primary_category_votes,
@@ -292,41 +290,34 @@ def build_legislator_info(legislator_data):
     return legislator_info
 
 
-def process_all_legislators(bill_analyses, input="mongodb"):
+def process_all_legislators(bill_analyses, model, schema=None):
     """Process ideology scores for all legislators"""
 
+    # If schema not specified, use latest version
+    if schema is None:
+        schema = SCHEMA_VERSION
+
     profiles = []
-    if input == "data":
-        # iterate over each legislator
-        for legislator_file in MEMBER_VOTES_DIR.iterdir():
-            if legislator_file.suffix != ".json":
-                continue
+    # Get collection
+    member_votes_col = db_utils.get_collection("member_votes")
+    for legislator_data in member_votes_col.find():
+        legislator_info = build_legislator_info(legislator_data)
+        legislator_votes = legislator_data.get("votes", [])
 
-            with open(legislator_file, "r") as f:
-                legislator_data = json.load(f)
+        profile = create_legislator_profile(
+            legislator_info, legislator_votes, bill_analyses
+        )
 
-            legislator_info = build_legislator_info(legislator_data)
-            legislator_votes = legislator_data.get("votes", [])
+        # Add unique metadata
+        profile["model"] = model
+        profile["schema_version"] = schema
 
-            profile = create_legislator_profile(
-                legislator_info, legislator_votes, bill_analyses
-            )
-            profiles.append(profile)
-    else:
-        # Get collection
-        member_votes_col = db_utils.get_collection("member_votes")
-        for legislator_data in member_votes_col.find():
-            legislator_info = build_legislator_info(legislator_data)
-            legislator_votes = legislator_data.get("votes", [])
-
-            profile = create_legislator_profile(
-                legislator_info, legislator_votes, bill_analyses
-            )
-            profiles.append(profile)
+        profiles.append(profile)
 
     return profiles
 
 
+@DeprecationWarning
 def load_bill_analyses_from_data():
     """Load a dictionary of all bill analyses from data/ directory"""
     bill_analyses = {}
@@ -370,16 +361,29 @@ def load_bill_analyses_from_data():
 
     return bill_analyses
 
-def load_bill_analyses_from_db():
-    """Load a dictionary of all bill analyses from MongoDB"""
+
+def load_bill_analyses_from_db(model, schema_version=None):
+    """
+    Load bill analyses from MongoDB, filtering by model and optionally schema version.
+    """
     bill_analyses = {}
     collection = db_utils.get_collection(INPUT_COLLECTION)
 
-    for analysis_data in collection.find():
+    if schema_version is None:
+        # Get latest schema version available
+        schema_version = SCHEMA_VERSION
+
+    query = {"model": model, "schema_version": schema_version}
+
+    for analysis_data in collection.find(query):
         bill_id = analysis_data.get("bill_id")
         if bill_id:
-            bill_analyses[bill_id] = analysis_data
+            if bill_id not in bill_analyses:
+                bill_analyses[bill_id] = analysis_data
 
+    print(
+        f"Loaded {len(bill_analyses)} bill analyses for model '{model}' (schema v{schema_version})"
+    )
     return bill_analyses
 
 
@@ -395,6 +399,7 @@ def write_profiles_to_db(profiles):
     print(f"Updated profile for {count} members")
 
 
+@DeprecationWarning
 def write_profiles_to_json(profiles):
     """Write legislator profiles to JSON files in data/legislator_profiles."""
     count = 0
@@ -412,36 +417,32 @@ def write_profiles_to_json(profiles):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--input",
-        choices=["mongodb", "data"],
-        default="mongodb",
-        help="Source of bill analyses: MongoDB or data/. Specify --input mongodb or --input data",
+        "--data",
+        action="store_true",
+        help="Store to data/ instead of MongoDB",
+    )
+    # REQUIRED ARGUMENT
+    parser.add_argument(
+        "--model",
+        required=True,
+        help="Specify the model of the analyses to use (e.g., 'gemini-2.5-flash-lite')",
     )
     parser.add_argument(
-        "--output",
-        choices=["mongodb", "data"],
-        default="mongodb",
-        help="Store to MongoDB or data/. Specify --output mongodb or --output data",
+        "--schema",
+        type=int,
+        help="Optionally specify schema version (defaults to latest)",
     )
 
     args = parser.parse_args()
 
-
-    # Load bill analyses
-    if args.input == "data":
-        bill_analyses = load_bill_analyses_from_data()
-    else:
-        bill_analyses = load_bill_analyses_from_db()
-
+    # Load bill analyses for specific model
+    bill_analyses = load_bill_analyses_from_db(args.model, args.schema)
 
     # Process all legislators
-    profiles = process_all_legislators(bill_analyses, args.input)
+    profiles = process_all_legislators(bill_analyses, args.model, args.schema)
 
-    # Write profiles to specified output
-    if args.output == "data":
+    # Write profiles
+    if args.data:
         write_profiles_to_json(profiles)
-    elif args.output == "mongodb":
-        write_profiles_to_db(profiles)
     else:
         write_profiles_to_db(profiles)
-        write_profiles_to_json(profiles)

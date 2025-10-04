@@ -106,131 +106,59 @@ def generate_bill_jsons(force=False):
 def get_bills(force=False, no_db=False):
     seen_bills = set()
 
-    # FETCH FROM DATA FOLDER
-    # Example path to roll call data: data/{congress}/votes/{year}
-    for congress in CONGRESS_DATA_DIR.iterdir():
-        if not congress.is_dir():
-            continue
-
-        votes_dir = congress / "votes"
-        if not votes_dir.exists():
-            print(f"WARNING: No votes folder in {congress}")
-            continue
-
-        # Iterate through each vote folder by year
-        for year in votes_dir.iterdir():
-            if not year.is_dir():
-                continue
-
-            # Iterate through all roll call vote folders in year
-            for folder in year.iterdir():
-                if not folder.is_dir():
-                    continue
-
-                data_file = folder / "data.json"
-                if not data_file.exists():
-                    continue
-
-                with open(data_file, "r") as f:
-                    vote_data = json.load(f)
-
-                # Filter out non-bill votes (votes for quorum or leadership)
-                if (bill := vote_data.get("bill", {})) == {}:
-                    continue
-
-                # Ignore hres, sres, hconres, sconres
-                # These are simple and concurrent resolutions that have no lawful power
-                if bill.get("type") not in ["hr", "hjres", "s", "sjres"]:
-                    continue
-
-                # Only include votes on passage of bills
-                if vote_data.get("category") not in ["passage", "passage-suspension"]:
-                    continue
-
-                bill_dir = get_bill_directory(congress, bill, show_warnings=False)
-                if bill_dir:
-                    data_file = bill_dir / "data.json"
-                    if data_file.exists() and not force:
-                        # If data.json already exists and not forcing, skip
-                        print(
-                            f"Skipping {bill['type']}{bill['number']} in {congress.name}, data.json already exists."
-                        )
-                        continue
-
-                # Build filter string
-                bill_id = build_billstatus_id(bill)
-
-                # Don't fetch duplicates
-                if bill_id in seen_bills:
-                    continue
-
-                print(f"Fetching bill status for {bill_id}")
-
-                # Call govinfo downloader (returns True upon success)
-                result = fetch_bill_status(bill_id, bill["congress"])
-
-                # Mark bill as voted if fetch bill status finished with no errors
-                if result:
-                    bill_dir = get_bill_directory(congress, bill)
-                    if bill_dir:
-                        mark_bill_as_voted(bill_dir)
-
-                seen_bills.add(bill_id)
-
     # FETCH FROM MONGODB
-    if not no_db:
-        rollcall_collection = db_utils.get_collection("rollcall_votes")
-        print("\nFetching bills from MongoDB rollcall_votes collection...")
+    rollcall_collection = db_utils.get_collection("rollcall_votes")
+    print("\nFetching bills from MongoDB rollcall_votes collection...")
 
-        # Query for bill votes only (exclude non-bill votes)
-        query = {
-            "bill": {"$exists": True, "$ne": {}},
-            "bill.type": {"$in": ["hr", "hjres", "s", "sjres"]},
-            "category": {"$in": ["passage", "passage-suspension"]},
-        }
+    # Query for bill votes only (exclude non-bill votes)
+    query = {
+        "bill": {"$exists": True, "$ne": {}},
+        "bill.type": {"$in": ["hr", "hjres", "s", "sjres"]},
+        "category": {"$in": ["passage", "passage-suspension"]},
+    }
 
-        mongo_bills = rollcall_collection.find(query)
+    mongo_bills = rollcall_collection.find(query)
 
-        for vote_doc in mongo_bills:
-            bill = vote_doc.get("bill", {})
-            if not bill:
+    for vote_doc in mongo_bills:
+        bill = vote_doc.get("bill", {})
+        if not bill:
+            continue
+
+        # Build bill ID
+        bill_id = build_billstatus_id(bill)
+
+        # Skip if already processed
+        if bill_id in seen_bills:
+            continue
+
+        congress = str(bill.get("congress"))
+        congress_path = CONGRESS_DATA_DIR / congress
+
+        bill_dir = get_bill_directory(congress_path, bill)
+        if bill_dir:
+            data_file = bill_dir / "data.json"
+            if data_file.exists() and not force:
+                # If data.json already exists and not forcing, skip
+                print(
+                    f"Skipping {bill['type']}{bill['number']} in {congress_path.name}, data.json already exists."
+                )
                 continue
 
-            # Build bill ID
-            bill_id = build_billstatus_id(bill)
+        print(f"Fetching bill status for {bill_id} (from MongoDB)")
 
-            # Skip if already processed
-            if bill_id in seen_bills:
-                continue
+        # Fetch bill status, returns True upon success
+        result = fetch_bill_status(bill_id, bill["congress"])
 
-            congress = str(bill.get("congress"))
-            congress_path = CONGRESS_DATA_DIR / congress
+        if result:
+            # Get congress number and construct path
+            congress_num = bill["congress"]
+            congress_path = CONGRESS_DATA_DIR / str(congress_num)
 
             bill_dir = get_bill_directory(congress_path, bill)
             if bill_dir:
-                data_file = bill_dir / "data.json"
-                if data_file.exists() and not force:
-                    # If data.json already exists and not forcing, skip
-                    print(
-                        f"Skipping {bill['type']}{bill['number']} in {congress_path.name}, data.json already exists."
-                    )
-                    continue
+                mark_bill_as_voted(bill_dir)
 
-            print(f"Fetching bill status for {bill_id} (from MongoDB)")
-
-            # Fetch bill status, returns True upon success
-            result = fetch_bill_status(bill_id, bill["congress"])
-
-            if result:
-                # Get congress number and construct path
-                congress_num = bill["congress"]
-                congress_path = CONGRESS_DATA_DIR / str(congress_num)
-
-                bill_dir = get_bill_directory(congress_path, bill)
-                if bill_dir:
-                    mark_bill_as_voted(bill_dir)
-
-            seen_bills.add(bill_id)
+        seen_bills.add(bill_id)
 
     # Generate data.json files for all bill xml data pulled
     if force:
@@ -242,12 +170,10 @@ def get_bills(force=False, no_db=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--force", action="store_true", help="Force re-download")
-    parser.add_argument("--no_db", action="store_true", help="Don't load to db")
 
     args = parser.parse_args()
 
     get_bills(args.force, args.no_db)
 
-    if not args.no_db:
-        # Will only load bill_data collection, since analyses have not been generated yet
-        load_bills_and_analyses()
+    # Will only load bill_data collection, since analyses have not been generated yet
+    load_bills_and_analyses()

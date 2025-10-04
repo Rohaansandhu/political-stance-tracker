@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-from pymongo import ASCENDING, MongoClient
+from pymongo import DESCENDING, ASCENDING, MongoClient
 from start_mongod import PORT
 import os
 
@@ -10,7 +10,13 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI", f"mongodb://localhost:{PORT}/")
 DB_NAME = os.getenv("DB_NAME", "political_stance_tracker")
 
-COLLECTION_LIST = ["bill_data", "bill_analyses", "rollcall_votes", "member_votes"]
+COLLECTION_LIST = [
+    "bill_data",
+    "bill_analyses",
+    "rollcall_votes",
+    "member_votes",
+    "legislator_profiles",
+]
 
 
 def get_db():
@@ -23,18 +29,30 @@ def ensure_indexes():
     """Create unique indexes to avoid duplicate bill entries."""
     db = get_db()
     db.bill_data.create_index([("bill_id", ASCENDING)], unique=True)
-    db.bill_analyses.create_index([("bill_id", ASCENDING)], unique=True)
-    db.votes.create_index([("vote_id", ASCENDING)], unique=True)
-
-
-def update_one(collection_name: str, update: dict, filter_key: str):
-    """Update a single document in the given collection."""
-    db = get_db()
-    collection = db[collection_name]
-    result = collection.update_one(
-        {filter_key: update[filter_key]}, {"$set": update}, upsert=True
+    db.bill_analyses.create_index(
+        [("bill_id", ASCENDING), ("model", ASCENDING), ("schema_version", DESCENDING)],
+        unique=True,
     )
-    return result.modified_count
+    db.legislator_profiles.create_index(
+        [("member_id", ASCENDING), ("model", ASCENDING), ("schema_version", DESCENDING)],
+        unique=True,
+    )
+    db.member_votes.create_index([("member_id", ASCENDING)], unique=True)
+    db.rollcall_votes.create_index([("vote_id", ASCENDING)], unique=True)
+
+
+def update_one(collection_name, document, key_fields):
+    """
+    key_fields can be a string or list of strings for compound keys
+    """
+    collection = get_collection(collection_name)
+
+    if isinstance(key_fields, str):
+        key_fields = [key_fields]
+
+    # Build filter from key fields
+    filter = {field: document[field] for field in key_fields}
+    collection.update_one(filter, {"$set": document}, upsert=True)
 
 
 def update_many(collection_name: str, updates: list, query: dict):
@@ -49,3 +67,8 @@ def get_collection(collection_name: str):
     """Return a reference to the specified collection."""
     db = get_db()
     return db[collection_name]
+
+
+# Use utils as a script to ensure indexes in database (only needs to be run once)
+if __name__ == "__main__":
+    ensure_indexes()
