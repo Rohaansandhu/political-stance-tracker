@@ -22,7 +22,8 @@ def get_output_dir(model=None, schema=None):
     if model is None:
         model = MODEL
 
-    output_dir = Path("data/plots") / f"{model}_schema_v{schema}"
+    sanitezed_model = sanitize_filename(model)
+    output_dir = Path("data/plots") / f"{sanitezed_model}_schema_v{schema}"
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
@@ -60,7 +61,7 @@ def plot_histograms(df, title, group_name, output_dir):
     # Create a subfolder for this category inside output_dir
     category_dir = output_dir / sanitize_filename(title)
     category_dir.mkdir(parents=True, exist_ok=True)
-    
+
     groups = df[group_name].unique()
     for group in groups:
         sub = df[df[group_name] == group]
@@ -81,7 +82,7 @@ def plot_histograms(df, title, group_name, output_dir):
         plt.tight_layout()
 
         safe_group = sanitize_filename(group)
-        filename = output_dir / f"hist_{safe_group}.png"
+        filename = category_dir / f"hist_{safe_group}.png"
         plt.savefig(filename)
         plt.close()
     print(f"Created histograms for {len(groups)} groups")
@@ -97,6 +98,10 @@ def load_profiles(model=None, schema=None):
     query = {"model": model, "schema_version": schema}
     profile_coll = db_utils.get_collection("legislator_profiles")
     profiles = profile_coll.find(query)
+
+    # Return an empty list if the query doesn't find anything
+    if not profiles:
+        return list()
 
     # Data collectors by category type
     data = {
@@ -132,6 +137,21 @@ def load_profiles(model=None, schema=None):
 
     return dfs
 
+def main(args):
+    """Main Function for creating plots"""
+
+    dfs = load_profiles(args.model, args.schema)
+    if not dfs:
+        print(f"No profiles found for model: {args.model} and schema v{args.schema}")
+        return
+
+    output_dir = get_output_dir(args.model, args.schema)
+
+    for name, df in dfs.items():
+        print(f"Plotting {name} ({len(df)} records)")
+        plot_boxplots(df, name.replace("_", " ").title(), "category", output_dir)
+        plot_histograms(df, name.replace("_", " ").title(), "category", output_dir)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -146,11 +166,4 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-
-    dfs = load_profiles(args.model, args.schema)
-    output_dir = get_output_dir(args.model, args.schema)
-
-    for name, df in dfs.items():
-        print(f"Plotting {name} ({len(df)} records)")
-        plot_boxplots(df, name.replace("_", " ").title(), "category", output_dir)
-        plot_histograms(df, name.replace("_", " ").title(), "category", output_dir)
+    main(args)

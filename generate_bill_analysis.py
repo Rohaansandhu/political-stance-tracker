@@ -12,10 +12,10 @@ load_dotenv()
 CONGRESS_DATA_DIR = Path("data")
 
 # MODEL CHOICE (Specify in environment variables, or here)
-# Free options: x-ai/grok-4-fast:free, deepseek/deepseek-chat-v3.1:free, google/gemini-2.0-flash-exp:free,
-# openai/gpt-oss-120b:free, z-ai/glm-4.5-air:free openai/gpt-oss-20b:free, meta-llama/llama-3.3-8b-instruct:free
-# Using gemini-2.5-flash-lite because of openrouter rate-limiting on free models
-# Using gpt-oss-120b with cerebras, due to poor partisan scoring with gemini
+# Models I've used:
+# openrouter: deepseek/deepseek-chat-v3.1:free, x-ai/grok-4-fast:free, cognitivecomputations/dolphin-mistral-24b-venice-edition:free
+# gemini: gemini-2.5-flash-lite (NOTE: bad partisan scores, lot's of censorship when it comes to politics)
+# cerebras: gpt-oss-120b, llama3.3-70b, qwen-3-32b
 MODEL = os.getenv("MODEL", "gpt-oss-120b")
 
 

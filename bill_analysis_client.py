@@ -234,7 +234,7 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
                     )
 
         except Exception as e:
-            if "JSON" not in str(e) or attempt >= max_retries:
+            if "JSON" not in str(e) or attempt >= max_retries or "Nonetype" not in str(e):
                 raise Exception(f"API call failed: {e}")
             print(f"API call failed on attempt {attempt + 1}, retrying... Error: {e}")
             continue
