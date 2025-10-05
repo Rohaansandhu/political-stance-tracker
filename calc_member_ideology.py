@@ -392,7 +392,8 @@ def write_profiles_to_db(profiles):
     count = 0
     for profile in profiles:
         try:
-            db_utils.update_one(OUTPUT_COLLECTION, profile, "member_id")
+            query = {"member_id": profile["member_id"], "model": profile["model"], "schema_version": profile["schema_version"]}
+            db_utils.update_one(OUTPUT_COLLECTION, profile, query)
             count += 1
         except Exception as e:
             print(f"Failed to insert/update profile for {profile['name']}: {e}")
