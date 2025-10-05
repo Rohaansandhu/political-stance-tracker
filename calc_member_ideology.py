@@ -443,11 +443,18 @@ if __name__ == "__main__":
     # Load bill analyses for specific model
     bill_analyses = load_bill_analyses_from_db(args.model, args.schema)
 
-    # Process all legislators
-    profiles = process_all_legislators(bill_analyses, args.model, args.schema)
+    # Check if bill analyses is empty
+    if bill_analyses:
 
-    # Write profiles
-    if args.data:
-        write_profiles_to_json(profiles)
+        # Process all legislators
+        profiles = process_all_legislators(bill_analyses, args.model, args.schema)
+
+        # Write profiles
+        if args.data:
+            write_profiles_to_json(profiles)
+        else:
+            write_profiles_to_db(profiles)
     else:
-        write_profiles_to_db(profiles)
+        print(
+            f"No analyses were found for model: {args.model} with schema version: {args.schema if args.schema else 'latest'}"
+        )
