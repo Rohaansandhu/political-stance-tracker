@@ -151,7 +151,7 @@ Collections used:
 **UPDATE** All scripts have been updated to store directly to MongoDB. Certain functions in this script are still in use, and it is being kept for backwards compatability. However, anyone who clones the repo from now on, should not run this script.
 
 ## Data Output
-All outputs are stored in the generated `data/` folder and its subdirectories.
+All outputs are stored in MongoDB or the generated `data/` folder.
 
 ## Current State & TODOs
 This project is actively under development. The following features and improvements are planned or in progress:
