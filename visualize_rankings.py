@@ -54,6 +54,7 @@ def plot_ideology_space(df):
     plt.close()
 
 if __name__ == "__main__":
+    raise DeprecationWarning
     csv_files = list(RESULTS_DIR.glob("*.csv"))
 
     if not csv_files:

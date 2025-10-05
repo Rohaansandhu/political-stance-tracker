@@ -124,7 +124,7 @@ Options:
 Output: legislator_profiles collection or `data/legislator_profiles/{member_id}.json`
 
 
-### 5. Member Ranking
+### 5. Member Ranking (DEPRECATED)
 Ranks legislators by political spectrums and categories, generates summary reports and CSV exports.
 ```bash
 python3 member_ranking.py
@@ -134,7 +134,7 @@ Outputs:
 - `data/rankings/extremes_summary.json` (summary of most extreme legislators)
 - `data/rankings/csv/` (CSV exports)
 
-### 6. Visualize Rankings
+### 6. Visualize Rankings (DEPRECATED)
 Generates plots and visualizations from the CSV ranking outputs. Plots are saved in `data/rankings/csv/plots/`.
 ```bash
 python3 visualize_rankings.py
