@@ -12,7 +12,8 @@ from generate_bill_analysis import MODEL
 
 def sanitize_filename(name: str) -> str:
     """Replace invalid filename characters with underscores."""
-    return re.sub(r'[^\w\-_.]', '_', name)
+    return re.sub(r"[^\w\-_.]", "_", name)
+
 
 def get_output_dir(model=None, schema=None):
     """Construct and ensure output directory exists."""
@@ -28,6 +29,10 @@ def get_output_dir(model=None, schema=None):
 
 def plot_boxplots(df, title, group_name, output_dir):
     """Create boxplots for all groups (spectrums, categories, scores)"""
+    # Create a subfolder for this category inside output_dir
+    category_dir = output_dir / sanitize_filename(title)
+    category_dir.mkdir(parents=True, exist_ok=True)
+
     groups = df[group_name].unique()
     for group in groups:
         sub = df[df[group_name] == group]
@@ -38,20 +43,24 @@ def plot_boxplots(df, title, group_name, output_dir):
             y="score",
             hue="party",
             palette={"D": "blue", "R": "red", "I": "yellow"},
-            legend=False,  
+            legend=False,
         )
         plt.title(f"{title}: {group}")
         plt.ylabel("Score")
         plt.tight_layout()
 
         safe_group = sanitize_filename(group)
-        filename = output_dir / f"box_{safe_group}.png"
+        filename = category_dir / f"box_{safe_group}.png"
         plt.savefig(filename)
         plt.close()
     print(f"Created boxplots for {len(groups)} groups")
 
 
 def plot_histograms(df, title, group_name, output_dir):
+    # Create a subfolder for this category inside output_dir
+    category_dir = output_dir / sanitize_filename(title)
+    category_dir.mkdir(parents=True, exist_ok=True)
+    
     groups = df[group_name].unique()
     for group in groups:
         sub = df[df[group_name] == group]
@@ -79,28 +88,49 @@ def plot_histograms(df, title, group_name, output_dir):
 
 
 def load_profiles(model=None, schema=None):
-    """Load legislator_profiles collection with appropriate filters"""
-    # If model/schema is not specified, set to defaults (determined by env variables)
+    """Load legislator_profiles collection and return dict of DataFrames for each score type."""
     if schema is None:
         schema = SCHEMA_VERSION
     if model is None:
         model = MODEL
 
-    # Get profiles
     query = {"model": model, "schema_version": schema}
     profile_coll = db_utils.get_collection("legislator_profiles")
     profiles = profile_coll.find(query)
 
-    # Gather all spectrums, scores, and party
-    records = []
+    # Data collectors by category type
+    data = {
+        "detailed_spectrums": [],
+        "main_categories": [],
+        "primary_categories": [],
+        "secondary_categories": [],
+        "subcategories": [],
+    }
+
     for doc in profiles:
         party = doc.get("party")
-        for spectrum, score in doc.get("detailed_spectrums", {}).items():
-            records.append({"spectrum": spectrum, "score": score, "party": party})
-        # TODO: Add categories (main, primary, secondary, subcategories)
 
-    df = pd.DataFrame(records)
-    return df
+        # Each key is a dict like { "category_name": score_value }
+        for field in data.keys():
+            field_data = doc.get(field, {})
+            for name, score in field_data.items():
+                data[field].append(
+                    {
+                        "type": field,
+                        "category": name,
+                        "score": score,
+                        "party": party,
+                    }
+                )
+
+    # Convert to individual DataFrames
+    dfs = {k: pd.DataFrame(v) for k, v in data.items() if v}
+
+    # # Add combined version if needed
+    # all_records = [r for records in data.values() for r in records]
+    # dfs["combined"] = pd.DataFrame(all_records)
+
+    return dfs
 
 
 if __name__ == "__main__":
@@ -117,8 +147,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    df = load_profiles(args.model, args.schema)
+    dfs = load_profiles(args.model, args.schema)
     output_dir = get_output_dir(args.model, args.schema)
 
-    plot_boxplots(df, "Detailed Spectrums", "spectrum", output_dir)
-    plot_histograms(df, "Detailed Spectrums", "spectrum", output_dir)
+    for name, df in dfs.items():
+        print(f"Plotting {name} ({len(df)} records)")
+        plot_boxplots(df, name.replace("_", " ").title(), "category", output_dir)
+        plot_histograms(df, name.replace("_", " ").title(), "category", output_dir)
