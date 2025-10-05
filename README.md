@@ -123,26 +123,16 @@ Options:
 
 Output: legislator_profiles collection or `data/legislator_profiles/{member_id}.json`
 
-
-### 5. Member Ranking (DEPRECATED)
-Ranks legislators by political spectrums and categories, generates summary reports and CSV exports.
+### 5. Create Plots
+Uses the legislator_profiles collection to create histograms and boxplots of congress members' data. You must specify the model and the schema version of the profiles you want to create plots from. 
 ```bash
-python3 member_ranking.py
+python3 create_plots.py [--model model] [--schema schema]
 ```
-Outputs:
-- `data/rankings/all_rankings.json` (full rankings)
-- `data/rankings/extremes_summary.json` (summary of most extreme legislators)
-- `data/rankings/csv/` (CSV exports)
+Options:
+- `--model`: Specify the model to graph data from
+- `--schema`: Specify the schema version to graph data from (optional, will default to latest)
 
-### 6. Visualize Rankings (DEPRECATED)
-Generates plots and visualizations from the CSV ranking outputs. Plots are saved in `data/rankings/csv/plots/`.
-```bash
-python3 visualize_rankings.py
-```
-Outputs:
-- Boxplots of ideological score distributions by party for each ranking
-- Scatter plots of rank vs. score, colored by party
-- All plots saved as PNG files in `data/rankings/csv/plots/`
+In the future, this script will take in options for congress (113-119), chamber (house or senate), and possibily more.
 
 ### Ensure Correct Indexes in MongoDB
 Ensures that all collections have the correct unique index restrictions.
@@ -173,7 +163,7 @@ This project is actively under development. The following features and improveme
 - **Resolve data irregularities:** Address issues with current rankings and political stances to ensure accuracy and reliability. Spectrum ranges are extremely variable. Libertarian and Authoritarian leanings need to be implemented better. <br>
   *Progress: Bill votes for small amendment changes happen often. Now only the bill votes on passage are included. Political categories and spectrums still need more vetting and additions.*
 - **Add graphs and visualizations:** Integrate graphical outputs to better illustrate findings and trends. <br>
-  *Progress: Added two scripts to generate csvs and graphs (boxplots and scatterplots).*
+  *Progress: Added create_plots.py.*
 - **Add results folder for findings:** Create a dedicated folder to store summary results, visualizations, and key insights generated to show this tool's output. <br>
   *Progress: Will add soon for initial findings. Once more data is crunched and organized, the results will be made public. The plan is to gather data from the 113th to 119th congress.*
 

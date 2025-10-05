@@ -437,6 +437,11 @@ if __name__ == "__main__":
         type=int,
         help="Optionally specify schema version (defaults to latest)",
     )
+    # TODO: Add parsing by congress, requires changes to legislator_profiles and bill_analyses
+    # parser.add_argument(
+    #     "--congress",
+    #     help="Pass a specific congress to generate plots for (defaults to all data)",
+    # )
 
     args = parser.parse_args()
 
