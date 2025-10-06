@@ -1,0 +1,79 @@
+{
+  "political_spectrums": [
+    {
+      "name": "Government Role",
+      "left_side": "More Regulation / Government Intervention",
+      "right_side": "Deregulation / Limited Government"
+    },
+    {
+      "name": "Economic Policy",
+      "left_side": "Progressive / Redistributionist",
+      "right_side": "Free Market / Laissez-Faire"
+    },
+    {
+      "name": "Social Policy",
+      "left_side": "Progressive / Liberal",
+      "right_side": "Traditional / Conservative"
+    },
+    {
+      "name": "Foreign Policy",
+      "left_side": "Internationalist / Interventionist",
+      "right_side": "Isolationist / Restraint"
+    },
+    {
+      "name": "Federalism",
+      "left_side": "Centralized Power",
+      "right_side": "Decentralized Power"
+    },
+    {
+      "name": "Civil Liberties vs Security",
+      "left_side": "Privacy & Civil Liberties Priority",
+      "right_side": "Security & Law-and-Order Priority"
+    },
+    {
+      "name": "Populism vs Elitism",
+      "left_side": "Populist / Anti-Establishment",
+      "right_side": "Institutional / Technocratic"
+    },
+    {
+      "name": "Environmental Spectrum",
+      "left_side": "Pro-Climate Action",
+      "right_side": "Pro-Industry / Minimal Regulation"
+    },
+    {
+      "name": "Cultural Policy",
+      "left_side": "Multicultural / Pluralist",
+      "right_side": "Nationalist / Homogeneous"
+    },
+    {
+      "name": "Economic Globalization",
+      "left_side": "Pro-Globalization",
+      "right_side": "Protectionist / Economic Nationalist"
+    },
+    {
+      "name": "Corporate Power",
+      "left_side": "Anti-Corporate / Cooperative",
+      "right_side": "Pro-Business / Corporate Friendly"
+    },
+    {
+      "name": "Progress vs Tradition",
+      "left_side": "Modernist / Secular",
+      "right_side": "Traditionalist / Religious"
+    },
+    {
+      "name": "Tech & Privacy",
+      "left_side": "Tech-Skeptical / Privacy-First",
+      "right_side": "Tech-Optimistic / Innovation-First"
+    },
+    {
+      "name": "Individualism vs Collectivism",
+      "left_side": "Collectivist / Communitarian",
+      "right_side": "Individualist / Libertarian"
+    },
+    {
+      "name": "Democracy vs Authoritarianism",
+      "left_side": "Democratic / Participatory",
+      "right_side": "Authoritarian / Majoritarian"
+    }
+  ]
+}

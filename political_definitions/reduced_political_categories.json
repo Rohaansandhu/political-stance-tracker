@@ -1,0 +1,382 @@
+{
+  "political_categories": [
+    {
+      "name": "Economy & Finance",
+      "conservative_view": "Free markets, lower taxes, minimal regulation",
+      "liberal_view": "Government regulation, progressive taxation, worker protections",
+      "subcategories": [
+        { 
+          "name": "Taxes",
+          "conservative_view": "Lower taxes stimulate growth",
+          "liberal_view": "Progressive taxation funds public services"
+        },
+        { 
+          "name": "Spending & Budget",
+          "conservative_view": "Balanced budgets, reduced spending",
+          "liberal_view": "Strategic investment drives prosperity"
+        },
+        { 
+          "name": "Trade",
+          "conservative_view": "Free trade increases prosperity",
+          "liberal_view": "Protect workers, environment, human rights"
+        },
+        { 
+          "name": "Business Regulation",
+          "conservative_view": "Minimal regulation allows innovation",
+          "liberal_view": "Strong regulation prevents abuse"
+        },
+        { 
+          "name": "Labor & Employment",
+          "conservative_view": "Market forces determine wages",
+          "liberal_view": "Worker protections ensure fairness"
+        },
+        { 
+          "name": "Monetary Policy",
+          "conservative_view": "Sound money, limited intervention",
+          "liberal_view": "Support employment, economic stimulus"
+        },
+        { 
+          "name": "Financial Markets",
+          "conservative_view": "Light regulation promotes innovation",
+          "liberal_view": "Strong oversight prevents fraud"
+        }
+      ]
+    },
+    {
+      "name": "Healthcare",
+      "conservative_view": "Market solutions, personal choice, competition",
+      "liberal_view": "Universal access, government affordability role",
+      "subcategories": [
+        { 
+          "name": "Coverage Models",
+          "conservative_view": "Private insurance provides choice",
+          "liberal_view": "Universal healthcare ensures access"
+        },
+        { 
+          "name": "Costs & Access",
+          "conservative_view": "Competition reduces costs naturally",
+          "liberal_view": "Government intervention controls pricing"
+        },
+        { 
+          "name": "Public Health",
+          "conservative_view": "Individual choice, personal responsibility",
+          "liberal_view": "Collective action protects public health"
+        },
+        { 
+          "name": "Mental Health",
+          "conservative_view": "Community and private sector solutions",
+          "liberal_view": "Government funding ensures access"
+        },
+        { 
+          "name": "Reproductive Health",
+          "conservative_view": "Protect life, parental rights",
+          "liberal_view": "Women's autonomy, reproductive choice"
+        }
+      ]
+    },
+    {
+      "name": "Education",
+      "conservative_view": "School choice, parental rights, local control",
+      "liberal_view": "Equitable funding, teacher support, inclusion",
+      "subcategories": [
+        { 
+          "name": "K-12 Education",
+          "conservative_view": "Local control, merit pay",
+          "liberal_view": "Adequate funding, address gaps"
+        },
+        { 
+          "name": "Higher Education",
+          "conservative_view": "Personal responsibility for costs",
+          "liberal_view": "Public funding, loan forgiveness"
+        },
+        { 
+          "name": "School Choice",
+          "conservative_view": "Competition improves quality",
+          "liberal_view": "Support public schools fully"
+        },
+        { 
+          "name": "Education Equity",
+          "conservative_view": "High standards for all",
+          "liberal_view": "Targeted resources address disadvantages"
+        },
+        { 
+          "name": "STEM & Workforce Training",
+          "conservative_view": "Industry partnerships, practical skills",
+          "liberal_view": "Public investment ensures competitiveness"
+        }
+      ]
+    },
+    {
+      "name": "Social Issues",
+      "conservative_view": "Traditional values, law and order",
+      "liberal_view": "Social justice, equality, reform",
+      "subcategories": [
+        { 
+          "name": "Civil Rights",
+          "conservative_view": "Equal treatment, colorblind policies",
+          "liberal_view": "Combat systemic discrimination actively"
+        },
+        { 
+          "name": "Immigration",
+          "conservative_view": "Secure borders, enforce laws",
+          "liberal_view": "Humane treatment, pathway to citizenship"
+        },
+        { 
+          "name": "Criminal Justice",
+          "conservative_view": "Law and order, tough sentencing",
+          "liberal_view": "Reform, rehabilitation, police accountability"
+        },
+        { 
+          "name": "Family & Culture",
+          "conservative_view": "Traditional family, parental rights",
+          "liberal_view": "Marriage equality, LGBTQ rights"
+        },
+        { 
+          "name": "Drug Policy",
+          "conservative_view": "Maintain prohibition, enforcement focus",
+          "liberal_view": "Decriminalization, treat as health issue"
+        },
+        { 
+          "name": "Privacy & Civil Liberties",
+          "conservative_view": "Security balanced with rights",
+          "liberal_view": "Strong privacy, limit surveillance"
+        }
+      ]
+    },
+    {
+      "name": "Environment & Energy",
+      "conservative_view": "Economic growth, energy independence, markets",
+      "liberal_view": "Climate action, renewables, protection",
+      "subcategories": [
+        { 
+          "name": "Climate Policy",
+          "conservative_view": "Market solutions, gradual change",
+          "liberal_view": "Urgent regulation, rapid transition"
+        },
+        { 
+          "name": "Energy Production",
+          "conservative_view": "All energy sources, independence",
+          "liberal_view": "Transition to renewables quickly"
+        },
+        { 
+          "name": "Conservation",
+          "conservative_view": "Balance use and conservation",
+          "liberal_view": "Prioritize protection over extraction"
+        },
+        { 
+          "name": "Environmental Justice",
+          "conservative_view": "Economic opportunity improves communities",
+          "liberal_view": "Address disproportionate burdens"
+        },
+        { 
+          "name": "Water Policy",
+          "conservative_view": "Respect water rights, markets",
+          "liberal_view": "Universal access, government conservation"
+        }
+      ]
+    },
+    {
+      "name": "Defense & Foreign Policy",
+      "conservative_view": "Peace through strength, American leadership",
+      "liberal_view": "Diplomacy, cooperation, human rights",
+      "subcategories": [
+        { 
+          "name": "Military Spending",
+          "conservative_view": "Strong defense requires funding",
+          "liberal_view": "Excessive spending diverts resources"
+        },
+        { 
+          "name": "Foreign Relations",
+          "conservative_view": "America first, bilateral relationships",
+          "liberal_view": "Multilateral engagement, cooperation"
+        },
+        { 
+          "name": "Security & Intelligence",
+          "conservative_view": "Strong capabilities necessary",
+          "liberal_view": "Oversight prevents abuse"
+        },
+        { 
+          "name": "Veterans Affairs",
+          "conservative_view": "Honor service, comprehensive benefits",
+          "liberal_view": "Moral obligation, full support"
+        }
+      ]
+    },
+    {
+      "name": "Technology & Innovation",
+      "conservative_view": "Light regulation, innovation, free speech",
+      "liberal_view": "Strong regulation, privacy, accountability",
+      "subcategories": [
+        { 
+          "name": "Data Privacy",
+          "conservative_view": "Market solutions, individual choice",
+          "liberal_view": "Strong laws, user rights"
+        },
+        { 
+          "name": "Tech Regulation",
+          "conservative_view": "Protect speech, market competition",
+          "liberal_view": "Break monopolies, regulate harm"
+        },
+        { 
+          "name": "Emerging Tech",
+          "conservative_view": "Minimal regulation, innovation leadership",
+          "liberal_view": "Proactive regulation, ensure safety"
+        },
+        { 
+          "name": "Cybersecurity",
+          "conservative_view": "Private partnerships, minimal regulation",
+          "liberal_view": "Government coordination, infrastructure regulation"
+        },
+        { 
+          "name": "Digital Speech & Misinformation",
+          "conservative_view": "Protect free speech online",
+          "liberal_view": "Platform responsibility, combat misinformation"
+        }
+      ]
+    },
+    {
+      "name": "Infrastructure & Transportation",
+      "conservative_view": "Private sector, user fees, efficiency",
+      "liberal_view": "Public investment, stimulus, equity",
+      "subcategories": [
+        { 
+          "name": "Transportation",
+          "conservative_view": "User fees, private sector",
+          "liberal_view": "Mass transit, sustainable options"
+        },
+        { 
+          "name": "Digital Infrastructure",
+          "conservative_view": "Private sector, market competition",
+          "liberal_view": "Universal access through investment"
+        },
+        { 
+          "name": "Housing & Urban Planning",
+          "conservative_view": "Market solutions, homeownership",
+          "liberal_view": "Affordable housing, tenant protections"
+        },
+        { 
+          "name": "Public Works & Utilities",
+          "conservative_view": "Private management, user fees",
+          "liberal_view": "Public utilities, universal access"
+        }
+      ]
+    },
+    {
+      "name": "Government & Institutional Reform",
+      "conservative_view": "Limited government, originalism, election integrity",
+      "liberal_view": "Democratic reforms, voting rights, accountability",
+      "subcategories": [
+        { 
+          "name": "Electoral Law",
+          "conservative_view": "Integrity, voter ID, prevent fraud",
+          "liberal_view": "Expand access, prevent suppression"
+        },
+        { 
+          "name": "Campaign Finance",
+          "conservative_view": "Political spending as speech",
+          "liberal_view": "Limit corporate influence, transparency"
+        },
+        { 
+          "name": "Judicial & Institutional Reform",
+          "conservative_view": "Judicial restraint, respect traditions",
+          "liberal_view": "Reform politicization, ethics enforcement"
+        },
+        { 
+          "name": "Transparency & Anti-Corruption",
+          "conservative_view": "Balance transparency with security",
+          "liberal_view": "Strong laws, whistleblower protections"
+        }
+      ]
+    },
+    {
+      "name": "Agriculture & Rural Issues",
+      "conservative_view": "Family farming, minimal regulation, markets",
+      "liberal_view": "Sustainability, worker protections, standards",
+      "subcategories": [
+        { 
+          "name": "Farm Policy",
+          "conservative_view": "Market programs, reduce burden",
+          "liberal_view": "Support sustainability, small farmers"
+        },
+        { 
+          "name": "Food Safety",
+          "conservative_view": "Science-based, minimal labeling",
+          "liberal_view": "Strong oversight, consumer information"
+        },
+        { 
+          "name": "Rural Development",
+          "conservative_view": "Market solutions, rural autonomy",
+          "liberal_view": "Investment ensures equal access"
+        }
+      ]
+    },
+    {
+      "name": "Budget & Appropriations",
+      "conservative_view": "Fiscal discipline, balanced budgets, cuts",
+      "liberal_view": "Strategic investment, less deficit concern",
+      "subcategories": [
+        { 
+          "name": "Debt & Deficit",
+          "conservative_view": "Reduce debt, spending cuts",
+          "liberal_view": "Debt acceptable for investment"
+        },
+        { 
+          "name": "Appropriations",
+          "conservative_view": "Streamlined, eliminate waste",
+          "liberal_view": "Adequate funding for services"
+        }
+      ]
+    },
+    {
+      "name": "Science & Space",
+      "conservative_view": "Private innovation, commercialization, leadership",
+      "liberal_view": "Public investment, exploration, societal benefit",
+      "subcategories": [
+        { 
+          "name": "Space Policy",
+          "conservative_view": "Private industry, minimal regulation",
+          "liberal_view": "NASA public agency, regulate commercial"
+        },
+        { 
+          "name": "Research & Development",
+          "conservative_view": "Private R&D more efficient",
+          "liberal_view": "Government drives innovation"
+        }
+      ]
+    },
+    {
+      "name": "Disaster & Emergency Management",
+      "conservative_view": "Local responsibility, private efficiency, preparedness",
+      "liberal_view": "Federal coordination, adaptation, protection",
+      "subcategories": [
+        { 
+          "name": "Natural Disasters",
+          "conservative_view": "State local response, personal responsibility",
+          "liberal_view": "Federal response, equitable assistance"
+        },
+        { 
+          "name": "Emergency Preparedness",
+          "conservative_view": "State-led, avoid overreach",
+          "liberal_view": "Well-funded federal management"
+        }
+      ]
+    },
+    {
+      "name": "Tribal & Indigenous Affairs",
+      "conservative_view": "Sovereignty within framework, development",
+      "liberal_view": "Honor treaties, self-determination, rights",
+      "subcategories": [
+        { 
+          "name": "Tribal Sovereignty",
+          "conservative_view": "Balance tribal and federal authority",
+          "liberal_view": "Strong sovereignty, honor treaties"
+        },
+        { 
+          "name": "Economic & Cultural Policy",
+          "conservative_view": "Development opportunities, property rights",
+          "liberal_view": "Protect heritage, equitable management"
+        }
+      ]
+    }
+  ]
+}

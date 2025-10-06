@@ -61,10 +61,16 @@ def load_political_frameworks():
     with open("political_definitions/political_spectrums.json", "r") as f:
         spectrums = json.load(f)
 
-    return categories, spectrums
+    with open("political_definitions/reduced_political_categories.json", "r") as f:
+        reduced_categories = json.load(f)
+
+    with open("political_definitions/reduced_political_spectrums.json", "r") as f:
+        reduced_spectrums = json.load(f)
+
+    return categories, spectrums, reduced_categories, reduced_spectrums
 
 
-def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
+def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
     """
     Analyze a political bill and return structured JSON classification.
 
@@ -83,17 +89,19 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
         raise ValueError("Bill text cannot be empty")
 
     # Load political frameworks
-    categories, spectrums = load_political_frameworks()
+    categories, spectrums, reduced_categories, reduced_spectrums = load_political_frameworks()
 
-    # Make nested functino for code readability
-    def create_user_prompt(is_retry=False, previous_response=None):
+    # Make nested function for code readability
+    def create_user_prompt(is_retry=False, previous_response=None, use_reduced=False):
+        selected_categories = reduced_categories if use_reduced else categories
+        selected_spectrums = reduced_spectrums if use_reduced else spectrums
         base_prompt = f"""Please analyze the following bill and provide a comprehensive political classification:
 
                         Political Categories
-                        {categories}
+                        {selected_categories}
 
                         Political Spectrums
-                        {spectrums}
+                        {selected_spectrums}
 
                         BILL TEXT:
                         {bill_text}
@@ -180,11 +188,15 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
         return base_prompt
 
     last_response = None
+    use_reduced = False
 
     for attempt in range(max_retries + 1):
         try:
             is_retry = attempt > 0
-            user_prompt = create_user_prompt(is_retry, last_response)
+            if use_reduced:
+                user_prompt = create_user_prompt(False, None, use_reduced)
+            else:
+                user_prompt = create_user_prompt(is_retry, last_response, use_reduced)
 
             # Use temperature of 0 for deterministic output
             completion = client.chat.completions.create(
@@ -234,10 +246,18 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=2):
                     )
 
         except Exception as e:
-            if "JSON" not in str(e) or attempt >= max_retries or "Nonetype" not in str(e):
-                raise Exception(f"API call failed: {e}")
-            print(f"API call failed on attempt {attempt + 1}, retrying... Error: {e}")
-            continue
+            # Check if it's a token limit error that needs reduced prompt
+            if "context_length" in str(e).lower() or "token" in str(e).lower():
+                if not use_reduced:
+                    print("Token limit exceeded, retrying with reduced frameworks...")
+                    use_reduced = True
+                    continue
+            # Check if it's a retryable error (JSON or None output)
+            if "JSON" in str(e) or "Nonetype" in str(e) and attempt < max_retries:
+                print(f"API call failed on attempt {attempt + 1}, retrying... Error: {e}")
+                continue
+            
+            raise Exception(f"API call failed: {e}")
 
 
 def _clean_json_response(response_content):
