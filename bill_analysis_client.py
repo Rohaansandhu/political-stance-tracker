@@ -85,8 +85,18 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
     Raises:
         Exception: If API call fails or JSON parsing fails after all retries
     """
+
     if not bill_text.strip():
         raise ValueError("Bill text cannot be empty")
+    
+    # Safe for most models (16K tokens)
+    MAX_BILL_CHARS = 64000 
+
+    bill_truncated = False
+    if len(bill_text) > MAX_BILL_CHARS:
+        print(f"Bill truncated: {len(bill_text)} -> {MAX_BILL_CHARS} chars")
+        bill_text = bill_text[:MAX_BILL_CHARS] + "\n\n[Bill text truncated]"
+        bill_truncated = True
 
     # Load political frameworks
     categories, spectrums, reduced_categories, reduced_spectrums = load_political_frameworks()
@@ -233,6 +243,8 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
                 ).isoformat()
                 # Add schema_version for future compatibility
                 analysis_result["schema_version"] = SCHEMA_VERSION
+                # Add if bill was truncated
+                analysis_result["bill_truncated"] = bill_truncated
                 return analysis_result
             except json.JSONDecodeError as e:
                 if attempt < max_retries:
