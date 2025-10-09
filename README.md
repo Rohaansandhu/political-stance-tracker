@@ -170,4 +170,4 @@ This project is actively under development. The following features and improveme
 If you have suggestions or want to contribute, feel free to open an issue or pull request!
 
 ## Acknowledgments
-Special thanks to the [unitedstates/congress](https://github.com/unitedstates/congress) project for providing the House and Senate scrapers that make this project possible.
+Special thanks to the [unitedstates/congress](https://github.com/unitedstates/congress) project for providing the House and Senate scrapers that make this project possible. 
