@@ -89,7 +89,7 @@ python3 process_votes_by_member.py [--writeData]
 Options:
 - `--writeData`: If specified will also store to the data/ folder
 
-Output: MongoDB 'member_votes' collection and/or `data/organized_votes/{member_id}.json` .
+Output: MongoDB 'member_votes' collection.
 
 ### 2. Get Voted Bills
 Fetches bill status for all bills that have been voted on and marks them accordingly. Also generates `data.json` files for bill XML data. Automatically uploads bill data to MongoDB.
@@ -114,14 +114,16 @@ Output: MongoDB bill_analyses collection
 ### 4. Calculate Member Ideology
 Processes all legislators and calculates ideology scores based on their voting records and bill analyses. Please specify model (required) and schema version of the bill analyses you want to use.
 ```bash
-python3 calc_member_ideology.py [--model model] [--schema schema] [--data]
+python3 calc_member_ideology.py [--model model] [--schema schema] [--congress congress] [--chamber chamber] [--bill_type type1 type2...]
 ```
 Options:
 - `--model`: Specify the model to analyze data from
 - `--schema`: Specify the schema version to analyze data from (optional, will default to latest)
-- `--data`: Stores data to data/ (not recommended)
+- `--congress`: (Optional) Specify the congress
+- `--chamber`: (Optional) Specify the chamber (house, senate)
+- `--bill_type`: (Optional) Specify one or more bill types
 
-Output: legislator_profiles collection or `data/legislator_profiles/{member_id}.json`
+Output: legislator_profiles collection
 
 ### 5. Create Plots
 Uses the legislator_profiles collection to create histograms and boxplots of congress members' data. You must specify the model and the schema version of the profiles you want to create plots from. 

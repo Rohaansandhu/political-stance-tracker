@@ -34,7 +34,7 @@ def ensure_indexes():
         unique=True,
     )
     db.legislator_profiles.create_index(
-        [("member_id", ASCENDING), ("model", ASCENDING), ("schema_version", DESCENDING)],
+        [("member_id", ASCENDING), ("model", ASCENDING), ("schema_version", DESCENDING), ("spec_hash", ASCENDING)],
         unique=True,
     )
     db.member_votes.create_index([("member_id", ASCENDING)], unique=True)

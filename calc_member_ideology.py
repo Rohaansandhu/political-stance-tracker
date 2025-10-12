@@ -37,6 +37,17 @@ def calculate_average_scores(vote_data_dict):
     }
 
 
+def check_inputs(model, schema, congress, chamber, bill_type):
+    if congress and congress < 113:
+        raise ValueError(f"Congress must be at least 113, not {congress}")
+    if chamber and chamber not in ["house", "senate"]:
+        raise ValueError(f"Chamber must be (house, senate) not {chamber}")
+    if bill_type:
+        for bt in bill_type:
+            if bt not in ["hr", "hjres", "s", "sjres"]:
+                raise ValueError(f"Bill types must be (hr, hjres, s, sjres) not {bt}")
+
+
 def calculate_legislator_ideology(legislator_votes, bill_analyses):
     """
     Calculate ideology scores for a legislator based on their voting pattern.
@@ -66,7 +77,8 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
 
         # Determine vote direction (1 for support, -1 for oppose)
         vote_value = get_vote_value(vote)
-        if vote_value == 0:  # Did not vote
+        # If they didn't vote, move on
+        if vote_value == 0:
             continue
 
         key_provisions = bill_analysis.get("bill_summary", {}).get("key_provisions", [])
@@ -290,7 +302,7 @@ def build_legislator_info(legislator_data):
     return legislator_info
 
 
-def process_all_legislators(bill_analyses, model, schema=None):
+def process_all_legislators(bill_analyses, model, spec_hash, schema=None):
     """Process ideology scores for all legislators"""
 
     # If schema not specified, use latest version
@@ -308,16 +320,20 @@ def process_all_legislators(bill_analyses, model, schema=None):
             legislator_info, legislator_votes, bill_analyses
         )
 
+        # Don't add profiles for legislator's that had no votes with the active filters
+        if profile["vote_count"] == 0:
+            continue
+
         # Add unique metadata
         profile["model"] = model
         profile["schema_version"] = schema
+        profile["spec_hash"] = spec_hash
 
         profiles.append(profile)
 
     return profiles
 
 
-@DeprecationWarning
 def load_bill_analyses_from_data():
     """Load a dictionary of all bill analyses from data/ directory"""
     bill_analyses = {}
@@ -362,7 +378,36 @@ def load_bill_analyses_from_data():
     return bill_analyses
 
 
-def load_bill_analyses_from_db(model, schema_version=None):
+def get_spec_hash(model, schema, congress=None, chamber=None, bill_type=None) -> str:
+    """Generate a readable spec hash like: model_schema_congress_chamber_billtype.
+
+    Model and schema are required. Congress, chamber, and bill_type are optional.
+    """
+    # If not specified, latest was used
+    if schema is None:
+        schema = SCHEMA_VERSION
+
+    parts = [model, str(schema)]
+    if congress:
+        parts.append(str(congress))
+    else:
+        parts.append("all")
+    if chamber:
+        parts.append(chamber.lower())
+    else:
+        parts.append("all")
+    if bill_type:
+        # sort for consistency (variance in inputting different bill_types)
+        parts.append(",".join(sorted(bt.lower() for bt in bill_type)))
+    else:
+        parts.append("all")
+
+    return "_".join(parts)
+
+
+def load_bill_analyses_from_db(
+    model, schema_version=None, congress=None, chamber=None, bill_type=None
+):
     """
     Load bill analyses from MongoDB, filtering by model and optionally schema version.
     """
@@ -374,6 +419,14 @@ def load_bill_analyses_from_db(model, schema_version=None):
         schema_version = SCHEMA_VERSION
 
     query = {"model": model, "schema_version": schema_version}
+
+    # Optional filters
+    if congress:
+        query["congress"] = congress
+    if chamber:
+        query["chamber"] = chamber
+    if bill_type:
+        query["bill_type"] = {"$in": bill_type}
 
     for analysis_data in collection.find(query):
         bill_id = analysis_data.get("bill_id")
@@ -396,6 +449,7 @@ def write_profiles_to_db(profiles):
                 "member_id": profile["member_id"],
                 "model": profile["model"],
                 "schema_version": profile["schema_version"],
+                "spec_hash": profile["spec_hash"],
             }
             db_utils.update_one(OUTPUT_COLLECTION, profile, query)
             count += 1
@@ -437,22 +491,41 @@ if __name__ == "__main__":
         type=int,
         help="Optionally specify schema version (defaults to latest)",
     )
-    # TODO: Add parsing by congress, requires changes to legislator_profiles and bill_analyses
-    # parser.add_argument(
-    #     "--congress",
-    #     help="Pass a specific congress to generate plots for (defaults to all data)",
-    # )
+    # Optional paramaters
+    parser.add_argument(
+        "--congress",
+        type=int,
+        help="Pass a specific congress to generate plots for (defaults to all data)",
+    )
+    parser.add_argument(
+        "--chamber", help="Specify the chamber of the analyses to use (house, senate)"
+    )
+    parser.add_argument(
+        "--bill_type", nargs="+", help="Specify the bill type(s) to use "
+    )
 
     args = parser.parse_args()
 
+    # Check inputs
+    check_inputs(args.model, args.schema, args.congress, args.chamber, args.bill_type)
+
     # Load bill analyses for specific model
-    bill_analyses = load_bill_analyses_from_db(args.model, args.schema)
+    bill_analyses = load_bill_analyses_from_db(
+        args.model, args.schema, args.congress, args.chamber, args.bill_type
+    )
 
     # Check if bill analyses is empty
     if bill_analyses:
 
+        # Get hash
+        spec_hash = get_spec_hash(
+            args.model, args.schema, args.congress, args.chamber, args.bill_type
+        )
+
         # Process all legislators
-        profiles = process_all_legislators(bill_analyses, args.model, args.schema)
+        profiles = process_all_legislators(
+            bill_analyses, args.model, spec_hash, args.schema
+        )
 
         # Write profiles
         if args.data:
