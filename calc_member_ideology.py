@@ -422,7 +422,7 @@ def load_bill_analyses_from_db(
 
     # Optional filters
     if congress:
-        query["congress"] = congress
+        query["congress"] = str(congress)
     if chamber:
         query["chamber"] = chamber
     if bill_type:
