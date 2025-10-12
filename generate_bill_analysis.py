@@ -45,7 +45,9 @@ def generate_bill_analyses(force=False, num_of_bills=None):
     start_time = time.perf_counter()
 
     # Process from MongoDB
-    bill_collection = db_utils.get_collection("bill_data").find()
+    bill_collection = db_utils.get_collection("bill_data").find(
+        {"bill_type": {"$in": ["hr", "hjres", "s", "sjres"]}}
+    )
     print("\nFetching bills from MongoDB bill_data collection...")
     bill_analyses_coll = db_utils.get_collection("bill_analyses")
 
@@ -79,6 +81,17 @@ def generate_bill_analyses(force=False, num_of_bills=None):
         bill_analysis["bill_id"] = bill_id
         # Add model
         bill_analysis["model"] = MODEL
+        # Using bill_data, add congress, chamber, and bill type
+        bill_analysis["congress"] = bill_data["congress"]
+        bill_analysis["bill_type"] = bill_data["bill_type"]
+        # Use conversion dict for chambers
+        bill_types_to_chamber = {
+            "hjres": "house",
+            "hr": "house",
+            "s": "senate",
+            "sjres": "senate",
+        }
+        bill_analysis["chamber"] = bill_types_to_chamber.get(bill_data["bill_type"])
 
         filter = {
             "bill_id": bill_id,
