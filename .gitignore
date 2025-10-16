@@ -2,6 +2,9 @@
 data/
 cache/
 
+# Fix files (for one time fixes)
+*fix.py
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

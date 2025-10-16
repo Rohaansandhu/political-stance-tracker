@@ -5,7 +5,7 @@ import json
 import subprocess
 from pathlib import Path
 import db_utils
-from load_to_db import load_bills_and_analyses
+from load_to_db import load_bills
 
 # Path to the congress repo data directory
 CONGRESS_DATA_DIR = Path("data")
@@ -103,7 +103,7 @@ def generate_bill_jsons(force=False):
         print("Command failed:", e)
 
 
-def get_bills(force=False, no_db=False):
+def get_bills(force=False, congress=None):
     seen_bills = set()
 
     # FETCH FROM MONGODB
@@ -117,7 +117,13 @@ def get_bills(force=False, no_db=False):
         "category": {"$in": ["passage", "passage-suspension"]},
     }
 
+    # Only include specified congress (optional)
+    if congress:
+        query["congress"] = int(congress)
+
+    mongo_bill_count = rollcall_collection.count_documents(query)
     mongo_bills = rollcall_collection.find(query)
+    print(f"Found {mongo_bill_count} rollcall votes")
 
     for vote_doc in mongo_bills:
         bill = vote_doc.get("bill", {})
@@ -156,7 +162,7 @@ def get_bills(force=False, no_db=False):
 
             bill_dir = get_bill_directory(congress_path, bill)
             if bill_dir:
-                mark_bill_as_voted(bill_dir)
+                mark_bill_as_voted(bill_dir)                
 
         seen_bills.add(bill_id)
 
@@ -170,10 +176,11 @@ def get_bills(force=False, no_db=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--force", action="store_true", help="Force re-download")
+    parser.add_argument("--congress", type=int, help="Only gets bills for a specific congress")
 
     args = parser.parse_args()
 
-    get_bills(args.force, args.no_db)
+    get_bills(args.force, args.congress)
 
-    # Will only load bill_data collection, since analyses have not been generated yet
-    load_bills_and_analyses()
+    # Will load bill_data collection into MongoDB
+    load_bills()

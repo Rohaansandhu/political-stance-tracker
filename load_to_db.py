@@ -14,7 +14,7 @@ def load_json_file(file_path: Path):
         return json.load(f)
 
 
-def load_bills_and_analyses():
+def load_bills():
     count = 0
     for congress_dir in DATA_DIR.iterdir():
         if not congress_dir.is_dir() or not congress_dir.name.isdigit():
@@ -43,28 +43,8 @@ def load_bills_and_analyses():
                 except Exception as e:
                     print(f"Failed to load {data_file}: {e}")
                     continue
-                # Insert bill_analysis.json -> bill_analyses collection
-                analysis_file = sub_dir / "bill_analysis.json"
-                if not analysis_file.exists():
-                    continue
-                try:
-                    analysis_obj = load_json_file(analysis_file)
-                    # bill_id for a file found in data/117/bills/hr/hr1 is hr1-117
-                    # Set bill id if not found (kept for backwards compatability)
-                    if not analysis_obj.get("bill_id"):
-                        analysis_obj["bill_id"] = sub_dir.name + "-" + congress_dir.name
-                    # Create unique filter for collection
-                    filter = {
-                        "bill_id": analysis_obj.get("bill_id"),
-                        "model": analysis_obj.get("model"),
-                        "schema_version": analysis_obj.get("schema_version"),
-                    }
-                    db_utils.update_one("bill_analyses", analysis_obj, filter)
-                except Exception as e:
-                    print(f"Failed to load {analysis_file}: {e}")
-                    continue
                 count += 1
-    print(f"Inserted {count} bills and analyses into the database.")
+    print(f"Inserted {count} bills into the database.")
 
 
 def load_votes():
@@ -149,7 +129,8 @@ def load_legislator_profiles():
 def main():
     print("Loading all data found in data/ into the database...")
     load_votes()
-    load_bills_and_analyses()
+    load_bills()
+    # TODO: Add load_analyses()
     load_member_organized_votes()
     load_legislator_profiles()
 
