@@ -5,9 +5,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
-from bill_analysis_client import SCHEMA_VERSION
 import db_utils
-from generate_bill_analysis import MODEL
 
 
 def sanitize_filename(name: str) -> str:
@@ -15,15 +13,11 @@ def sanitize_filename(name: str) -> str:
     return re.sub(r"[^\w\-_.]", "_", name)
 
 
-def get_output_dir(model=None, schema=None):
+def get_output_dir(spec_hash):
     """Construct and ensure output directory exists."""
-    if schema is None:
-        schema = SCHEMA_VERSION
-    if model is None:
-        model = MODEL
 
-    sanitezed_model = sanitize_filename(model)
-    output_dir = Path("data/plots") / f"{sanitezed_model}_schema_v{schema}"
+    sanitezed_hash = sanitize_filename(spec_hash)
+    output_dir = Path("data/plots") / sanitezed_hash
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
@@ -88,20 +82,17 @@ def plot_histograms(df, title, group_name, output_dir):
     print(f"Created histograms for {len(groups)} groups")
 
 
-def load_profiles(model=None, schema=None):
+def load_profiles(spec_hash):
     """Load legislator_profiles collection and return dict of DataFrames for each score type."""
-    if schema is None:
-        schema = SCHEMA_VERSION
-    if model is None:
-        model = MODEL
 
-    query = {"model": model, "schema_version": schema}
+    query = {"spec_hash": spec_hash}
     profile_coll = db_utils.get_collection("legislator_profiles")
+    count = profile_coll.count_documents(query)
+    # Raise error if no profiles were found
+    if count == 0:
+        return ValueError(f"ERROR: No profiles were found")
     profiles = profile_coll.find(query)
 
-    # Return an empty list if the query doesn't find anything
-    if not profiles:
-        return list()
 
     # Data collectors by category type
     data = {
@@ -131,21 +122,15 @@ def load_profiles(model=None, schema=None):
     # Convert to individual DataFrames
     dfs = {k: pd.DataFrame(v) for k, v in data.items() if v}
 
-    # # Add combined version if needed
-    # all_records = [r for records in data.values() for r in records]
-    # dfs["combined"] = pd.DataFrame(all_records)
-
+    print(f"Found {count} profiles for {spec_hash}")
     return dfs
 
 def main(args):
     """Main Function for creating plots"""
 
-    dfs = load_profiles(args.model, args.schema)
-    if not dfs:
-        print(f"No profiles found for model: {args.model} and schema v{args.schema}")
-        return
+    dfs = load_profiles(args.spec_hash)
 
-    output_dir = get_output_dir(args.model, args.schema)
+    output_dir = get_output_dir(args.spec_hash)
 
     for name, df in dfs.items():
         print(f"Plotting {name} ({len(df)} records)")
@@ -156,13 +141,9 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model",
-        help="Specify the model of the analyses to use (e.g., 'gemini-2.5-flash-lite')",
-    )
-    parser.add_argument(
-        "--schema",
-        type=int,
-        help="Optionally specify schema version (defaults to latest)",
+        "--spec_hash",
+        required=True,
+        help="REQUIRED: Specify the hash of the profiles you want from legislator_profiles"
     )
 
     args = parser.parse_args()
