@@ -42,12 +42,12 @@ def process_vote_record(vote_data, member_votes):
         return
 
     # Ignore non-legislative bills
-    if bill.get("type") not in ["hr", "hjres", "s", "sjres"]:
+    if bill.get("type") not in {"hr", "hjres", "s", "sjres"}:
         return
 
     # Only include passage votes
     category = vote_data.get("category")
-    if category not in ["passage", "passage-suspension"]:
+    if category not in {"passage", "passage-suspension"}:
         return
 
     # Extract metadata
@@ -94,8 +94,8 @@ def process_vote_record(vote_data, member_votes):
             )
 
 
-@DeprecationWarning
 def process_votes_from_data():
+    raise DeprecationWarning
     member_votes = {}
 
     # Example path to roll call data: data/{congress_num}/votes/{year}

@@ -40,11 +40,11 @@ def calculate_average_scores(vote_data_dict):
 def check_inputs(model, schema, congress, chamber, bill_type):
     if congress and congress < 113:
         raise ValueError(f"Congress must be at least 113, not {congress}")
-    if chamber and chamber not in ["house", "senate"]:
+    if chamber and chamber not in {"house", "senate"}:
         raise ValueError(f"Chamber must be (house, senate) not {chamber}")
     if bill_type:
         for bt in bill_type:
-            if bt not in ["hr", "hjres", "s", "sjres"]:
+            if bt not in {"hr", "hjres", "s", "sjres"}:
                 raise ValueError(f"Bill types must be (hr, hjres, s, sjres) not {bt}")
 
 
@@ -193,11 +193,11 @@ def get_vote_value(vote):
     vote_lower = vote.lower().strip()
 
     # Support votes
-    if vote_lower in ["yea", "yes", "aye", "y"]:
+    if vote_lower in {"yea", "yes", "aye", "y"}:
         return 1
 
     # Opposition votes
-    if vote_lower in ["nay", "no", "n"]:
+    if vote_lower in {"nay", "no", "n"}:
         return -1
 
     # Didn't vote
@@ -354,7 +354,7 @@ def load_bill_analyses_from_data():
 
             # Ignore hres, sres, hconres, sconres
             # These are simple and concurrent resolutions that have no lawful power
-            if bill_type_folder.name not in ["hr", "hjres", "s", "sjres"]:
+            if bill_type_folder.name not in {"hr", "hjres", "s", "sjres"}:
                 continue
 
             # Iterate through all individual bill folders
@@ -458,9 +458,9 @@ def write_profiles_to_db(profiles):
     print(f"Updated profile for {count} members")
 
 
-@DeprecationWarning
 def write_profiles_to_json(profiles):
     """Write legislator profiles to JSON files in data/legislator_profiles."""
+    raise DeprecationWarning
     count = 0
     for profile in profiles:
         output_file = OUTPUT_DIR / f"{profile['member_id']}.json"
@@ -475,6 +475,7 @@ def write_profiles_to_json(profiles):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    # Deprecated
     parser.add_argument(
         "--data",
         action="store_true",
