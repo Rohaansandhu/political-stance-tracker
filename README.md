@@ -2,7 +2,7 @@
 # United States Political Stance Tracker
 Analyzes voting records to show where US Congress Members stand on major political issues and spectrums. Built upon the amazing tools of [unitedstates/congress](https://github.com/unitedstates/congress).
 
-If you're curious about the role of LLMs in legislation summaries and possible political analysis, I'd highly recommend checking out this paper from 2024 [political-llm.org](https://political-llm.org/).
+If you're curious about the role of LLMs in legislation summaries and possible political analysis, I'd highly recommend checking out this paper from 2024 [political-llm.org](https://political-llm.org/). Another great research piece was produced last May, discussing an LLM-driven framework for scaling Japanese parliamentary members using their political speeches [KOKKAI DOC](https://arxiv.org/pdf/2505.07118).
 
 
 ## Setup
