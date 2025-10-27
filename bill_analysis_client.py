@@ -3,6 +3,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import json
+import re
+from rapidfuzz import fuzz, process
 
 # Load environment variables once when module is imported
 load_dotenv()
@@ -88,9 +90,9 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
 
     if not bill_text.strip():
         raise ValueError("Bill text cannot be empty")
-    
+
     # Safe for most models (16K tokens)
-    MAX_BILL_CHARS = 64000 
+    MAX_BILL_CHARS = 64000
 
     bill_truncated = False
     if len(bill_text) > MAX_BILL_CHARS:
@@ -99,7 +101,9 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
         bill_truncated = True
 
     # Load political frameworks
-    categories, spectrums, reduced_categories, reduced_spectrums = load_political_frameworks()
+    categories, spectrums, reduced_categories, reduced_spectrums = (
+        load_political_frameworks()
+    )
 
     # Make nested function for code readability
     def create_user_prompt(is_retry=False, previous_response=None, use_reduced=False):
@@ -235,6 +239,7 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
             # Parse JSON response
             try:
                 analysis_result = json.loads(response_content)
+                analysis_result = validate(analysis_result, categories, spectrums)
                 if attempt > 0:
                     print(f"Successfully parsed JSON on retry attempt {attempt}")
                 # Add last_modified field for filtering
@@ -266,9 +271,11 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
                     continue
             # Check if it's a retryable error (JSON or None output)
             if "JSON" in str(e) or "Nonetype" in str(e) and attempt < max_retries:
-                print(f"API call failed on attempt {attempt + 1}, retrying... Error: {e}")
+                print(
+                    f"API call failed on attempt {attempt + 1}, retrying... Error: {e}"
+                )
                 continue
-            
+
             raise Exception(f"API call failed: {e}")
 
 
@@ -296,6 +303,71 @@ def _clean_json_response(response_content):
         response_content = response_content[: last_brace + 1]
 
     return response_content.strip()
+
+
+def correct_name(name, valid_names, score_threshold=60):
+    """
+    Return the corrected name if a close match exists in valid_names.
+    Uses RapidFuzz for faster and more accurate matching (builds off of difflib and fuzzywuzzy)
+    """
+    if not name or not valid_names:
+        return name
+
+    # exists in name or is substring of a valid name or vice versa
+    for valid_name in valid_names:
+        if name in valid_name or valid_name in name:
+            return valid_name
+
+    # Find the best match and its similarity score
+    match = process.extractOne(name, valid_names, scorer=fuzz.token_sort_ratio)
+    if match and match[1] >= score_threshold:
+        corrected_name = match[0]
+        if corrected_name != name:
+            print(
+                f"[correct_name] Corrected '{name}' → '{corrected_name}' (score: {match[1]:.1f})"
+            )
+        return match[0]
+    else:
+        if match:
+            print(
+                f"[correct_name] No suitable match for '{name}' (best: '{match[0]}' @ {match[1]:.1f} < {score_threshold})"
+            )
+        else:
+            print(f"[correct_name] No matches found for '{name}'")
+    return name
+
+
+def validate(analysis_result, categories, spectrums):
+    """Validate the analysis result against known categories and spectrums."""
+    valid_category_names = {cat["name"] for cat in categories["political_categories"]}
+    valid_subcategory_names = {
+        sub["name"] for cat in categories["political_categories"] for sub in cat.get("subcategories", [])
+    }
+    valid_spectrum_names = {spec["name"] for spec in spectrums["political_spectrums"]}
+
+    # Validate political categories
+    if "political_categories" in analysis_result:
+        pcats = analysis_result["political_categories"]
+        if "primary" in pcats:
+            primary_name = pcats["primary"]["name"]
+            pcats["primary"]["name"] = correct_name(primary_name, valid_category_names)
+        for sec in pcats.get("secondary", []):
+            sec_name = sec["name"]
+            sec["name"] = correct_name(sec_name, valid_category_names)
+
+        for sub in pcats.get("subcategories", []):
+            sub_name = sub["name"]
+            sub["name"] = correct_name(sub_name, valid_subcategory_names)
+
+    # Validate political spectrums
+    if "political_spectrums" in analysis_result:
+        pspecs = analysis_result["political_spectrums"]
+        for spec_name in list(pspecs.keys()):
+            fixed_name = correct_name(spec_name, valid_spectrum_names)
+            if fixed_name != spec_name:
+                pspecs[fixed_name] = pspecs.pop(spec_name)
+
+    return analysis_result
 
 
 def analyze_bills_batch(bill_texts, model="openai/gpt-oss-120b:free", max_retries=2):

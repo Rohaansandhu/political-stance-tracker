@@ -100,7 +100,7 @@ def load_profiles(spec_hash):
         "main_categories": [],
         "primary_categories": [],
         "secondary_categories": [],
-        "subcategories": [],
+        # "subcategories": [], Excluding subcategories for now, may remove in future schema versions, lack of precision between models
     }
 
     for doc in profiles:

@@ -21,3 +21,4 @@ PyYAML>=6.0
 scrapelib>=1.0.0
 xmltodict>=0.13.0
 packaging>=23.1
+rapidfuzz>=3.13.0
