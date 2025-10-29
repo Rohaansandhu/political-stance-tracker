@@ -30,7 +30,9 @@ elif CLIENT == "cerebras":
         api_key=os.environ.get("CEREBRAS_API_KEY"),
     )
 
-# Update Schema after every change to prompts
+# Update Schema after every change to prompts/categories/spectrums
+# Schema Version is actually at 3 currently, however, this project is constantly evolving, 
+# so I'm using data from both versions at the moment (to get a starting point for the data)
 SCHEMA_VERSION = 2
 
 SYSTEM_PROMPT = """
@@ -39,16 +41,14 @@ You are an expert political analyst specializing in legislative classification.
 Your task is to analyze bills and determine:
 
 1. POLITICAL CATEGORIES: Classify the bill into relevant policy areas (e.g., economic, social, regulatory, environmental, defense, healthcare, etc.)
+- Only use categories and spectrums provided in the user prompt
 
 2. VOTING POSITION ANALYSIS: For both YES and NO votes, determine:
 - Which political position it represents (liberal/progressive vs conservative)
 - The underlying political philosophy (more government intervention vs less government intervention)
 - Key stakeholder groups that would support/oppose
 
-3. POLITICAL SPECTRUM MAPPING: Place the bill on relevant political spectrums:
-- Government role (more regulation vs deregulation)
-- Economic policy (progressive vs free market)
-- Social policy (progressive vs traditional)
+3. POLITICAL SPECTRUM MAPPING: Place the bill on relevant political spectrums.
 
 Provide your analysis in a structured format with clear reasoning for each classification.
 Be objective and consider multiple political perspectives.
@@ -122,6 +122,7 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
 
                         Please provide:
                         1. Classify the bill into one or more relevant political categories and subcategories. 
+                           Only use the categories/spectrums provided above. Do NOT create new ones.
                            Determine the impact on each relevant category using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
                            Rate the bill on how conservative/progressive it is within each category. Use a scale of -1 to +1, where:
                             - -1 = fully aligned with the liberal_view
@@ -305,10 +306,11 @@ def _clean_json_response(response_content):
     return response_content.strip()
 
 
-def correct_name(name, valid_names, score_threshold=60):
+def correct_name(name, valid_names, score_threshold=70):
     """
     Return the corrected name if a close match exists in valid_names.
     Uses RapidFuzz for faster and more accurate matching (builds off of difflib and fuzzywuzzy)
+    Score threshold default is at 70, any lower may cause innacurate matches.
     """
     if not name or not valid_names:
         return name
