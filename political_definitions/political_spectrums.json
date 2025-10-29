@@ -104,6 +104,27 @@
       "left_description": "Transparency, free press, citizen participation.",
       "right_side": "Authoritarian / Majoritarian",
       "right_description": "Strong executive power, limited dissent, order over process."
+    },
+    {
+      "name": "Criminal Justice",
+      "left_side": "Rehabilitation Focused",
+      "left_description": "Emphasizes rehabilitation, diversion programs, and reduced sentencing.",
+      "right_side": "Punitive / Law-and-Order Focused",
+      "right_description": "Supports strict sentencing, expanded policing, and deterrence-based justice."
+    },
+    {
+      "name": "Education",
+      "left_side": "Public Investment / Equity Focused",
+      "left_description": "Prioritizes funding for public schools, equitable access, and affordability.",
+      "right_side": "School Choice / Market-Based",
+      "right_description": "Advocates for charter schools, vouchers, and private sector involvement."
+    },
+    {
+      "name": "Immigration",
+      "left_side": "Open / Inclusive Immigration",
+      "left_description": "Supports pathways to citizenship, humanitarian asylum, and diversity in immigration.",
+      "right_side": "Restrictive / National Security Focused",
+      "right_description": "Favors border enforcement, limited entry, and prioritizing national security concerns."
     }
   ]
 }
