@@ -29,12 +29,38 @@ def build_bill_id(bill: dict) -> str:
 
 
 def calculate_average_scores(vote_data_dict):
-    """Helper to calculate average weighted scores from vote data."""
-    return {
-        category: round(sum(vote["weighted_score"] for vote in votes) / len(votes), 3)
-        for category, votes in vote_data_dict.items()
-        if votes  # Only include categories with votes
+    """
+    Helper to calculate average weighted scores from vote data.
+    Returns a dictionary in the format:
+    {
+        "Category Name": {
+            "score": float,
+            "bills": [list of unique bill_ids],
+            "bill_count": int
+        },
+        ...
     }
+    """
+    results = {}
+
+    for category, votes in vote_data_dict.items():
+        if not votes:
+            continue
+
+        # Compute the average weighted score
+        avg_score = round(sum(v["weighted_score"] for v in votes) / len(votes), 3)
+
+        # Collect bill IDs
+        bill_ids = [v["bill_id"] for v in votes]
+
+        # Build the result
+        results[category] = {
+            "score": avg_score,
+            "bills": bill_ids,
+            "bill_count": len(bill_ids),
+        }
+
+    return results
 
 
 def check_inputs(model, schema, congress, chamber, bill_type):
@@ -179,12 +205,6 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
         ),
         "subcategory_classifications": calculate_average_scores(subcategory_votes),
         "vote_count": vote_count,
-        "spectrum_impacts": spectrum_votes,
-        "category_impacts": {
-            **primary_category_votes,
-            **secondary_category_votes,
-            **subcategory_votes,
-        },
     }
 
 
@@ -220,22 +240,19 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
     ideology_data = calculate_legislator_ideology(legislator_votes, bill_analyses)
 
     # Create standardized spectrum scores (map to common left-right, authoritarian-libertarian)
-    standard_scores = standardize_spectrum_scores(ideology_data["spectrum_scores"])
+    # standard_scores = standardize_spectrum_scores(ideology_data["spectrum_scores"])
 
     profile = {
         "member_id": legislator_info.get("member_id"),
         "name": legislator_info.get("name"),
         "party": legislator_info.get("party"),
         "state": legislator_info.get("state"),
-        "scores": standard_scores,
         "main_categories": ideology_data["main_category_classifications"],
         "primary_categories": ideology_data["primary_category_classifications"],
         "secondary_categories": ideology_data["secondary_category_classifications"],
         "subcategories": ideology_data["subcategory_classifications"],
         "detailed_spectrums": ideology_data["spectrum_scores"],
         "vote_count": ideology_data["vote_count"],
-        # "spectrum_impacts": ideology_data["spectrum_impacts"],
-        # "category_impacts": ideology_data["category_impacts"],
     }
 
     return profile
@@ -258,6 +275,9 @@ def standardize_spectrum_scores(spectrum_scores):
         "Foreign Policy",
         "Tech & Privacy",
         "Individualism vs Collectivism",
+        "Criminal Justice",
+        "Education",
+        "Immigration",
     ]
     left_right_values = []
 

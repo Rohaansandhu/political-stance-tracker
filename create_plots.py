@@ -114,7 +114,7 @@ def load_profiles(spec_hash):
                     {
                         "type": field,
                         "category": name,
-                        "score": score,
+                        "score": score["score"],
                         "party": party,
                     }
                 )
