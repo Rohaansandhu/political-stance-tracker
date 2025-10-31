@@ -342,12 +342,9 @@ def correct_name(name, valid_names, score_threshold=70):
 def validate(analysis_result, categories, spectrums):
     """Validate the analysis result against known categories and spectrums."""
     valid_category_names = {cat["name"] for cat in categories["political_categories"]}
-    valid_subcategory_names = {
-        sub["name"] for cat in categories["political_categories"] for sub in cat.get("subcategories", [])
-    }
     valid_spectrum_names = {spec["name"] for spec in spectrums["political_spectrums"]}
 
-    # Validate political categories
+    # Validate political categories (excluding subcategories, LLM should have freedom to define these)
     if "political_categories" in analysis_result:
         pcats = analysis_result["political_categories"]
         if "primary" in pcats:
@@ -356,10 +353,6 @@ def validate(analysis_result, categories, spectrums):
         for sec in pcats.get("secondary", []):
             sec_name = sec["name"]
             sec["name"] = correct_name(sec_name, valid_category_names)
-
-        for sub in pcats.get("subcategories", []):
-            sub_name = sub["name"]
-            sub["name"] = correct_name(sub_name, valid_subcategory_names)
 
     # Validate political spectrums
     if "political_spectrums" in analysis_result:
