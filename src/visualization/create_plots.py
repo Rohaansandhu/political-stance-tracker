@@ -5,7 +5,12 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from pathlib import Path
-import db_utils
+import sys
+# Add src/ to import path
+SCRIPT_DIR = Path(__file__).resolve().parent
+SRC_DIR = SCRIPT_DIR.parent 
+sys.path.insert(0, str(SRC_DIR)) 
+import db.db_utils as db_utils
 
 
 def sanitize_filename(name: str) -> str:

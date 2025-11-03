@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from pymongo import DESCENDING, ASCENDING, MongoClient
-from start_mongod import PORT
+from db.start_mongod import PORT
 import os
 
 # Load environment variables once when module is imported

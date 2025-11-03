@@ -1,10 +1,16 @@
+import sys
 import argparse
 import time
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+# Add src/ to import path
+SCRIPT_DIR = Path(__file__).resolve().parent
+SRC_DIR = SCRIPT_DIR.parent 
+sys.path.insert(0, str(SRC_DIR)) 
 import bill_analysis_client
-import db_utils
+import db.db_utils as db_utils
+
 
 load_dotenv()
 

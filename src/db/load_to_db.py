@@ -3,8 +3,8 @@
 import os
 import json
 from pathlib import Path
-from bill_analysis_client import SCHEMA_VERSION
-import db_utils
+from analysis.bill_analysis_client import SCHEMA_VERSION
+import db.db_utils as db_utils
 
 DATA_DIR = Path("data")
 

@@ -1,11 +1,15 @@
 import argparse
 import datetime
 import re
-import json
 import subprocess
 from pathlib import Path
-import db_utils
-from load_to_db import load_bills
+import sys
+# Add src/ to import path
+SCRIPT_DIR = Path(__file__).resolve().parent
+SRC_DIR = SCRIPT_DIR.parent 
+sys.path.insert(0, str(SRC_DIR)) 
+import db.db_utils as db_utils
+from db.load_to_db import load_bills
 
 # Path to the congress repo data directory
 CONGRESS_DATA_DIR = Path("data")
