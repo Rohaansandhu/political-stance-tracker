@@ -22,13 +22,13 @@ This project uses MongoDB to store and query vote and bill data. However, you'll
 
 **Start MongoDB:**
 ```bash
-python3 start_mongod.py
+python3 src/db/start_mongod.py
 ```
 This will start a local MongoDB server on port 27017 by default, with data stored in `data/db` and logs in `data/mongodlogs/`. Replica set support is available (see script for details).
 
 **Stop MongoDB:**
 ```bash
-python3 stop_mongod.py
+python3 src/db/stop_mongod.py
 ```
 This will cleanly shut down the MongoDB server.
 
@@ -69,7 +69,7 @@ Here is a list of all environment variables needed in this project:
 Run the following script to fetch roll call vote data and automatically load it into the database:
 
 ```bash
-python3 get_votes.py [--congress=NUM] [--session=NUM] [--sessions=LIST] [--force] [--fast]
+python3 src/get_votes.py [--congress=NUM] [--session=NUM] [--sessions=LIST] [--force] [--fast]
 ```
 - `--congress`, `--session`, `--sessions`: Specify which congress/session(s) to fetch.
 - `--force`: Force re-download of all vote data.
@@ -86,7 +86,7 @@ Make sure you run these commands in the top-level directory so the data populate
 ### 1. Process Votes by Member
 Organizes roll call votes by member, from MongoDB, and outputs to MongoDB (or data/).
 ```bash
-python3 process_votes_by_member.py [--writeData]
+python3 src/process_votes_by_member.py [--writeData]
 ```
 Options:
 - `--writeData`: If specified will also store to the data/ folder
@@ -96,7 +96,7 @@ Output: MongoDB 'member_votes' collection.
 ### 2. Get Voted Bills
 Fetches bill status for all bills that have been voted on and marks them accordingly. Also generates `data.json` files for bill XML data. Automatically uploads bill data to MongoDB.
 ```bash
-python3 get_voted_bills.py [--force]
+python3 src/get_voted_bills.py [--force]
 ```
 Use `--force` to re-download and re-parse all bill data.
 
@@ -105,7 +105,7 @@ Output: bill_data collection
 ### 3. Generate Bill Analyses
 Analyzes bills using an LLM and generates a `bill_analysis.json` for each voted bill. Processes bills from MongoDB.
 ```bash
-python3 generate_bill_analysis.py [--force] [--numOfBills num] 
+python3 src/generate_bill_analysis.py [--force] [--numOfBills num] 
 ```
 Options:
 - `--force`: Overwrite existing analyses and update outdated schemas.
@@ -116,7 +116,7 @@ Output: MongoDB bill_analyses collection
 ### 4. Calculate Member Ideology
 Processes all legislators and calculates ideology scores based on their voting records and bill analyses. Please specify model (required) and schema version of the bill analyses you want to use.
 ```bash
-python3 calc_member_ideology.py [--model model] [--schema schema] [--congress congress] [--chamber chamber] [--bill_type type1 type2...]
+python3 src/calc_member_ideology.py [--model model] [--schema schema] [--congress congress] [--chamber chamber] [--bill_type type1 type2...]
 ```
 Options:
 - `--model`: Specify the model to analyze data from
@@ -128,19 +128,27 @@ Options:
 Output: legislator_profiles collection
 
 ### 5. Create Plots
-Uses the legislator_profiles collection to create histograms and boxplots of congress members' data. You must spec_hash of the profiles you want to create plots from. 
+Uses the legislator_profiles collection to create histograms and boxplots of congress members' data. You must specify the spec_hash of the profiles you want to create plots from. 
 ```bash
-python3 create_plots.py [--spec_hash spec_hash]
+python3 src/create_plots.py [--spec_hash spec_hash]
 ```
 Options:
 - `--spec_hash`: (REQUIRED) Specify the specific legislator profiles to make plots with
 
-In the future, this script will take in options for congress (113-119), chamber (house or senate), and possibily more.
+
+### 6. Create Rankings
+Uses the legislator_profiles collection to create histograms and boxoplots of congress members' data. You must specify the spec_hash of the profiles you want to create plots from.
+```bash
+python3 src/create_rankings.py [--spec_hash spec_hash]
+```
+Options:
+- `--spec_hash`: (REQUIRED) Specify the specific legislator profiles to make plots with
+
 
 ### Ensure Correct Indexes in MongoDB
 Ensures that all collections have the correct unique index restrictions.
 ```bash
-python3 db_utils.py
+python3 src/db/db_utils.py
 ```
 
 ## Data Output

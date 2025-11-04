@@ -3,11 +3,6 @@ import datetime
 import re
 import subprocess
 from pathlib import Path
-import sys
-# Add src/ to import path
-SCRIPT_DIR = Path(__file__).resolve().parent
-SRC_DIR = SCRIPT_DIR.parent 
-sys.path.insert(0, str(SRC_DIR)) 
 import db.db_utils as db_utils
 from db.load_to_db import load_bills
 

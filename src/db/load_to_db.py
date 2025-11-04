@@ -1,6 +1,5 @@
 # Script to load all data from the data/ directory into the MongoDB database.
 # Feel free to comment out functions you don't want to run, each function corresponds to a collection
-import os
 import json
 from pathlib import Path
 from analysis.bill_analysis_client import SCHEMA_VERSION

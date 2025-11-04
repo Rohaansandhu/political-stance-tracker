@@ -3,12 +3,6 @@
 # Vote data must be saved to data/ since that is where the congress scraper outputs with usc-run
 import argparse
 import subprocess
-import sys
-import Path
-# Add src/ to import path
-SCRIPT_DIR = Path(__file__).resolve().parent
-SRC_DIR = SCRIPT_DIR.parent 
-sys.path.insert(0, str(SRC_DIR)) 
 from db.load_to_db import load_votes
 
 if __name__ == "__main__":
