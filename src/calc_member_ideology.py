@@ -2,6 +2,8 @@ import argparse
 import json
 from collections import defaultdict
 from pathlib import Path
+
+import pandas as pd
 from analysis.bill_analysis_client import SCHEMA_VERSION
 import db.db_utils as db_utils
 
@@ -460,6 +462,54 @@ def load_bill_analyses_from_db(
     return bill_analyses
 
 
+def generate_rankings(profiles):
+    """Generate rankings for each category/spectrum across all profiles."""
+    all_rows = []
+
+    # Collect data from every profile
+    for profile in profiles:
+        for field in ["detailed_spectrums", "main_categories"]:
+            data = profile.get(field, {})
+            for category, details in data.items():
+                all_rows.append({
+                    "field": field,
+                    "category": category,
+                    "score": details["score"],
+                    "party": profile.get("party"),
+                    "member_id": profile.get("member_id"),
+                    "name": profile.get("name"),
+                })
+
+    # Create one big DataFrame
+    df = pd.DataFrame(all_rows)
+
+    # Compute rankings *within each (field, category) group*
+    df["rank"] = df.groupby(["field", "category"])["score"].rank(
+        method="dense", ascending=False
+    )
+    df["percentile_rank"] = df.groupby(["field", "category"])["score"].rank(
+        pct=True, ascending=True
+    )
+
+    # Now push results back into each profile
+    for profile in profiles:
+        for field in ["detailed_spectrums", "main_categories"]:
+            sub = df[(df["field"] == field) &
+                     (df["member_id"] == profile["member_id"])]
+
+            for _, row in sub.iterrows():
+                cat = row["category"]
+                # make sure the category exists
+                if cat not in profile[field]:
+                    profile[field][cat] = {}
+
+                profile[field][cat].update({
+                    "rank": int(row["rank"]),
+                    "percentile_rank": round(row["percentile_rank"], 3),
+                })
+    return profiles
+
+
 def write_profiles_to_db(profiles):
     """Write legislator profiles to MongoDB collection."""
     count = 0
@@ -547,6 +597,9 @@ if __name__ == "__main__":
         profiles = process_all_legislators(
             bill_analyses, args.model, spec_hash, args.schema
         )
+
+        # Create rankings for each category/spectrum
+        profiles = generate_rankings(profiles)
 
         # Write profiles
         if args.data:

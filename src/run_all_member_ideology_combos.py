@@ -4,7 +4,7 @@ import db.db_utils as db_utils
 
 INPUT_COLLECTION = "bill_analyses"
 # Models I don't want running
-bannedModels = {"llama-4-scout-17b-16e-instruct", "deepseek/deepseek-chat-v3.1:free", "gemini-2.5-flash-lite", "openai/gpt-oss-20b:free"}
+bannedModels = {"llama-4-scout-17b-16e-instruct", "deepseek/deepseek-chat-v3.1:free", "gemini-2.5-flash-lite", "openai/gpt-oss-20b:free", "x-ai/grok-4-fast:free"}
 
 def get_available_filters():
     """Query MongoDB to find all available values for congress, chamber, and model."""
@@ -53,7 +53,7 @@ def run_all_combinations():
 
     for model in models:
         for combo in generate_combinations(congresses, chambers):
-            cmd = ["python3", "./calc_member_ideology.py", "--model", model]
+            cmd = ["python3", "./src/calc_member_ideology.py", "--model", model]
             for k, v in combo.items():
                 cmd.append(k)
                 cmd.append(v)
