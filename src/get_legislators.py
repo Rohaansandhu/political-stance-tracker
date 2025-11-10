@@ -35,7 +35,7 @@ def get_historical_legislators():
     historicalUrl = "https://unitedstates.github.io/congress-legislators/legislators-historical.json"
 
     response = requests.get(historicalUrl)
-    response.raise_for_status()  # raises an error if request failed
+    response.raise_for_status() 
     data = response.json()
 
     # Make sure output directory exists
@@ -61,6 +61,16 @@ def add_legislators_to_db():
     with open("data/historical_legislators.json", "r") as f:
         historical_data = json.load(f)
 
+    # Get member_votes collection
+    member_votes = db_utils.get_collection("member_votes")
+    members = set()
+    for member in member_votes.find():
+        members.add(member["member_id"])
+
+    # Add current tag to legislators who are current
+    for legislator in current_data:
+        legislator["current"] = True
+
     # Combine data
     all_legislators = current_data + historical_data
 
@@ -70,9 +80,24 @@ def add_legislators_to_db():
         bioguide_id = legislator.get("id", {}).get("bioguide")
         if not bioguide_id:
             continue 
-
         legislator["bioguide"] = bioguide_id
-        filter = {"bioguide": bioguide_id}
+        lis = legislator.get("id", {}).get("lis")
+        if lis:
+            legislator["lis"] = lis
+        else:
+            legislator["lis"] = None
+
+        # House members use bioguide, Senatores use lis
+        if legislator["bioguide"] in members or legislator["lis"] in members:
+            legislator["has_data"] = True
+        else:
+            legislator["has_data"] = False
+
+        # Set current to False if it doesn't exist
+        if "current" not in legislator:
+            legislator["current"] = False
+
+        filter = {"bioguide": bioguide_id, "lis": legislator["lis"]}
         db_utils.update_one("legislators", legislator, filter)
 
     print(f"Inserted/Updated {len(all_legislators)} legislators in the database.")
