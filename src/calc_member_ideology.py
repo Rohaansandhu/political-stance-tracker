@@ -324,7 +324,7 @@ def build_legislator_info(legislator_data):
     return legislator_info
 
 
-def process_all_legislators(bill_analyses, model, spec_hash, schema=None):
+def process_all_legislators(bill_analyses, model, spec_hash, schema=None, chamber=None):
     """Process ideology scores for all legislators"""
 
     # If schema not specified, use latest version
@@ -334,7 +334,16 @@ def process_all_legislators(bill_analyses, model, spec_hash, schema=None):
     profiles = []
     # Get collection
     member_votes_col = db_utils.get_collection("member_votes")
+    legislators_col = db_utils.get_collection("legislators")
+
     for legislator_data in member_votes_col.find():
+        # Only senators have the lis field
+        if chamber == "house":
+            if legislators_col.find_one({"lis": legislator_data["member_id"]}):
+                continue
+        elif chamber == "senate":
+            if not legislators_col.find_one({"lis": legislator_data["member_id"]}):
+                continue
         legislator_info = build_legislator_info(legislator_data)
         legislator_votes = legislator_data.get("votes", [])
 
@@ -428,7 +437,7 @@ def get_spec_hash(model, schema, congress=None, chamber=None, bill_type=None) ->
 
 
 def load_bill_analyses_from_db(
-    model, schema_version=None, congress=None, chamber=None, bill_type=None
+    model, schema_version=None, congress=None, bill_type=None
 ):
     """
     Load bill analyses from MongoDB, filtering by model and optionally schema version.
@@ -445,8 +454,6 @@ def load_bill_analyses_from_db(
     # Optional filters
     if congress:
         query["congress"] = str(congress)
-    if chamber:
-        query["chamber"] = chamber
     if bill_type:
         query["bill_type"] = {"$in": bill_type}
 
@@ -663,7 +670,7 @@ if __name__ == "__main__":
 
     # Load bill analyses for specific model
     bill_analyses = load_bill_analyses_from_db(
-        args.model, args.schema, args.congress, args.chamber, args.bill_type
+        args.model, args.schema, args.congress, args.bill_type
     )
 
     # Check if bill analyses is empty
@@ -676,7 +683,7 @@ if __name__ == "__main__":
 
         # Process all legislators
         profiles = process_all_legislators(
-            bill_analyses, args.model, spec_hash, args.schema
+            bill_analyses, args.model, spec_hash, args.schema, args.chamber
         )
 
         # Create rankings for each category/spectrum
