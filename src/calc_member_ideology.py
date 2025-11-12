@@ -469,7 +469,9 @@ def generate_rankings(profiles):
 
     # Get current legislators
     current_legislators = set()
-    legislator_collection = db_utils.get_collection("legislators").find({"current": True})
+    legislator_collection = db_utils.get_collection("legislators").find(
+        {"current": True}
+    )
     for legislator in legislator_collection:
         # Check latest term to determine if senator or house member
         if legislator["terms"][-1]["type"] == "sen":
@@ -477,34 +479,50 @@ def generate_rankings(profiles):
         else:
             current_legislators.add(legislator.get("bioguide"))
 
-    is_current = False
     # Collect data from every profile
     for profile in profiles:
         is_current = profile["member_id"] in current_legislators
         for field in ["detailed_spectrums", "main_categories"]:
             data = profile.get(field, {})
+
             for category, details in data.items():
-                all_rows.append({
-                    "field": field,
-                    "category": category,
-                    "score": details["score"],
-                    "party": profile.get("party"),
-                    "member_id": profile.get("member_id"),
-                    "name": profile.get("name"),
-                })
-                if is_current:
-                    all_current_rows.append({
+
+                # Don't include if bill count is too low (not enough data yet)
+                if details.get("bill_count", 0) <= 10:
+                    continue
+
+                all_rows.append(
+                    {
                         "field": field,
                         "category": category,
                         "score": details["score"],
                         "party": profile.get("party"),
                         "member_id": profile.get("member_id"),
                         "name": profile.get("name"),
-                    })
+                    }
+                )
+                if is_current:
+                    all_current_rows.append(
+                        {
+                            "field": field,
+                            "category": category,
+                            "score": details["score"],
+                            "party": profile.get("party"),
+                            "member_id": profile.get("member_id"),
+                            "name": profile.get("name"),
+                        }
+                    )
 
     # Create one big DataFrame
     df = pd.DataFrame(all_rows)
     current_df = pd.DataFrame(all_current_rows)
+
+    # Find counts
+    total_counts = df.groupby(["field", "category"]).size().rename("total_members")
+
+    total_current_counts = (
+        current_df.groupby(["field", "category"]).size().rename("total_current_members")
+    )
 
     # Compute rankings *within each (field, category) group*
     df["rank"] = df.groupby(["field", "category"])["score"].rank(
@@ -513,20 +531,18 @@ def generate_rankings(profiles):
     df["percentile_rank"] = df.groupby(["field", "category"])["score"].rank(
         pct=True, ascending=True
     )
-    current_df["current_rank"] = current_df.groupby(["field", "category"])["score"].rank(
-        method="dense", ascending=False
-    )
+    current_df["current_rank"] = current_df.groupby(["field", "category"])[
+        "score"
+    ].rank(method="dense", ascending=False)
     current_df["current_percentile_rank"] = current_df.groupby(["field", "category"])[
         "score"
     ].rank(pct=True, ascending=True)
 
-    is_current = False
     # Now push results back into each profile
     for profile in profiles:
         is_current = profile["member_id"] in current_legislators
         for field in ["detailed_spectrums", "main_categories"]:
-            sub = df[(df["field"] == field) &
-                     (df["member_id"] == profile["member_id"])]
+            sub = df[(df["field"] == field) & (df["member_id"] == profile["member_id"])]
 
             for _, row in sub.iterrows():
                 cat = row["category"]
@@ -534,29 +550,43 @@ def generate_rankings(profiles):
                 if cat not in profile[field]:
                     profile[field][cat] = {}
 
-                profile[field][cat].update({
-                    "rank": int(row["rank"]),
-                    "percentile_rank": round(row["percentile_rank"], 3),
-                })
+                total_members = int(total_counts.get((field, cat), 0))
+                total_current_members = int(total_current_counts.get((field, cat), 0))
+
+                profile[field][cat].update(
+                    {
+                        "rank": int(row["rank"]),
+                        "percentile_rank": round(row["percentile_rank"], 3),
+                        # Add member count info (so we can contextualize rankings)
+                        "total_members": total_members,
+                        "total_current_members": total_current_members,
+                    }
+                )
                 # Set to -1 (N/A), will be updated in following loop if current
-                profile[field][cat].update({
-                    "current_rank": -1,
-                    "current_percentile_rank": -1,
-                })
-            
+                profile[field][cat].update(
+                    {
+                        "current_rank": -1,
+                        "current_percentile_rank": -1,
+                    }
+                )
+
             # Have to iterate through current ranks separately (since its a different dataframe)
             if is_current:
                 current_sub = current_df[
-                    (current_df["field"] == field) &
-                    (current_df["member_id"] == profile["member_id"])
+                    (current_df["field"] == field)
+                    & (current_df["member_id"] == profile["member_id"])
                 ]
                 for _, current_row in current_sub.iterrows():
                     cat = current_row["category"]
 
-                    profile[field][cat].update({
-                        "current_rank": int(current_row["current_rank"]),
-                        "current_percentile_rank": round(current_row["current_percentile_rank"], 3),
-                    })
+                    profile[field][cat].update(
+                        {
+                            "current_rank": int(current_row["current_rank"]),
+                            "current_percentile_rank": round(
+                                current_row["current_percentile_rank"], 3
+                            ),
+                        }
+                    )
 
     return profiles
 
