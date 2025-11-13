@@ -2,13 +2,12 @@ import subprocess
 import argparse
 import db.db_utils as db_utils
 
-INPUT_COLLECTION = "bill_analyses"
-# Models I don't want running
+# Models I don't want running, this whole file is really just for me. 
 bannedModels = {"llama-4-scout-17b-16e-instruct", "deepseek/deepseek-chat-v3.1:free", "gemini-2.5-flash-lite", "openai/gpt-oss-20b:free", "x-ai/grok-4-fast:free"}
 
-def get_available_filters():
+def get_available_filters(collection):
     """Query MongoDB to find all available values for congress, chamber, and model."""
-    collection = db_utils.get_collection(INPUT_COLLECTION)
+    collection = db_utils.get_collection(collection)
 
     congresses = set()
     chambers = set()
@@ -31,11 +30,16 @@ def get_available_filters():
 
 
 def generate_combinations(congresses, chambers):
-    """Yield all valid combinations of filters, including 'None' for optional args."""
-    yield {}  # No filters
+    """
+    Yield all valid combinations of filters, including 'None' for optional args.
+    This function looks a little weird due to some commented out code. I've decided
+    that the data is only useful to compare Senators to Senators and Reps to Reps.
+    """
 
-    for c in congresses:
-        yield {"--congress": str(c)}
+    # yield {}  # No filters
+
+    # for c in congresses:
+    #     yield {"--congress": str(c)}
     for ch in chambers:
         yield {"--chamber": ch}
 
@@ -46,7 +50,7 @@ def generate_combinations(congresses, chambers):
 
 
 def run_all_combinations():
-    congresses, chambers, models = get_available_filters()
+    congresses, chambers, models = get_available_filters("bill_analyses")
     print(f"Available congresses: {congresses}")
     print(f"Available chambers: {chambers}")
     print(f"Available models: {models}")
