@@ -155,12 +155,17 @@ def extract_categories_from_profiles(
     return {field: sorted(list(cats)) for field, cats in categories_by_field.items()}
 
 
-def generate_stats(spec_hash: str) -> List[Dict]:
+def generate_stats(spec_hash: str, current_ids: list) -> List[Dict]:
     """Generate all histogram and scatter stats for a spec_hash."""
 
     # Fetch all profiles for this spec_hash
     leg_collection = db_utils.get_collection("legislator_profiles")
-    profiles = list(leg_collection.find({"spec_hash": spec_hash}))
+    query = {"spec_hash": spec_hash}
+    # Only do current legislators if current_ids are passed in
+    if current_ids:
+        query.update({"member_id": {"$in": current_ids}})
+
+    profiles = list(leg_collection.find(query))
 
     if not profiles:
         print(f"No profiles found for spec_hash: {spec_hash}")
@@ -188,28 +193,54 @@ def generate_stats(spec_hash: str) -> List[Dict]:
             # Generate histogram data
             histogram_data = generate_histogram_data(profiles, field, category)
             if histogram_data:
-                all_stats.append(
-                    {
-                        "spec_hash": spec_hash,
-                        "field": field,
-                        "subject": category,
-                        "chart_type": "histogram",
-                        **histogram_data,
-                    }
-                )
+                if current_ids:
+                    all_stats.append(
+                        {
+                            "spec_hash": spec_hash,
+                            "field": field,
+                            "subject": category,
+                            "chart_type": "histogram",
+                            **histogram_data,
+                            "current": True,
+                        }
+                    )
+                else:
+                    all_stats.append(
+                        {
+                            "spec_hash": spec_hash,
+                            "field": field,
+                            "subject": category,
+                            "chart_type": "histogram",
+                            **histogram_data,
+                            "current": False,
+                        }
+                    )
 
             # Generate scatter data
             scatter_data = generate_scatter_data(profiles, field, category)
             if scatter_data:
-                all_stats.append(
-                    {
-                        "spec_hash": spec_hash,
-                        "field": field,
-                        "subject": category,
-                        "chart_type": "scatter",
-                        **scatter_data,
-                    }
-                )
+                if current_ids:
+                    all_stats.append(
+                        {
+                            "spec_hash": spec_hash,
+                            "field": field,
+                            "subject": category,
+                            "chart_type": "scatter",
+                            **scatter_data,
+                            "current": True,
+                        }
+                    )
+                else:
+                    all_stats.append(
+                        {
+                            "spec_hash": spec_hash,
+                            "field": field,
+                            "subject": category,
+                            "chart_type": "scatter",
+                            **scatter_data,
+                            "current": False,
+                        }
+                    )
 
     print(f"Generated {len(all_stats)} stat documents for {spec_hash}")
     return all_stats
@@ -234,6 +265,7 @@ def write_stats_to_db(stats: List[Dict]):
             "field": stat["field"],
             "subject": stat["subject"],
             "chart_type": stat["chart_type"],
+            "current": stat["current"],
         }
         db_utils.update_one("aggregated_stats", stat, key_vals)
 
@@ -252,6 +284,17 @@ if __name__ == "__main__":
 
     all_stats = []
 
+    curr_legislators = []
+    # fetch all current member_ids from legislators
+    legislator_col = db_utils.get_collection("legislators")
+    ids = []
+    for leg in legislator_col.find({"current": True}):
+        # senate v house
+        if leg["lis"]:
+            ids.append(leg["lis"])
+        else:
+            ids.append(leg["bioguide"])
+
     if args.spec_hash:
         print(f"Generating stats for {args.spec_hash}")
         stats = generate_stats(args.spec_hash)
@@ -261,8 +304,10 @@ if __name__ == "__main__":
         spec_hashes = find_all_spec_hashes()
         print(f"Found {len(spec_hashes)} spec_hashes")
         for spec_hash in spec_hashes:
-            stats = generate_stats(spec_hash)
+            stats = generate_stats(spec_hash, [])
             all_stats.extend(stats)
+            current_stats = generate_stats(spec_hash, ids)
+            all_stats.extend(current_stats)
 
     write_stats_to_db(all_stats)
     print(f"\n Total stats generated: {len(all_stats)}")
