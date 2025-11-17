@@ -39,7 +39,7 @@ def generate_histogram_data(profiles: List[Dict], field: str, category: str) -> 
         return None
 
     # Create histogram bins from -1 to 1
-    bin_size = 0.2
+    bin_size = 0.05
     bins = []
 
     for i in np.arange(-1.0, 1.0, bin_size):
@@ -267,7 +267,11 @@ def write_stats_to_db(stats: List[Dict]):
             "chart_type": stat["chart_type"],
             "current": stat["current"],
         }
-        db_utils.update_one("aggregated_stats", stat, key_vals)
+        # TODO: Handle graph collections better. It's a little messy right now
+        if stat["chart_type"] == "scatter":
+            db_utils.update_one("scatter_stats", stat, key_vals)
+        elif stat["chart_type"] == "histogram":
+            db_utils.update_one("histogram_stats", stat, key_vals)
 
     print("Write complete!")
 
