@@ -340,15 +340,14 @@ def process_all_legislators(bill_analyses, model, spec_hash, schema=None, chambe
     profiles = []
     # Get collection
     member_votes_col = db_utils.get_collection("member_votes")
-    legislators_col = db_utils.get_collection("legislators")
 
     for legislator_data in member_votes_col.find():
-        # Only senators have the lis field
+        # Senator's member_id looks like SXXX (Ex: S313), House uses bioguide which has 7 chars
         if chamber == "house":
-            if legislators_col.find_one({"lis": legislator_data["member_id"]}):
+            if len(legislator_data["member_id"]) <= 4:
                 continue
         elif chamber == "senate":
-            if not legislators_col.find_one({"lis": legislator_data["member_id"]}):
+            if len(legislator_data["member_id"]) > 4:
                 continue
         legislator_info = build_legislator_info(legislator_data)
         legislator_votes = legislator_data.get("votes", [])

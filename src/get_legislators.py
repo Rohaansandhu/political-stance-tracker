@@ -81,23 +81,29 @@ def add_legislators_to_db():
         if not bioguide_id:
             continue 
         legislator["bioguide"] = bioguide_id
+
+        # TODO: Figure out how to handle data when a legislator goes from House to Senate
+        # There's only been 2 cases I've found where a legislator went from Senate to House (both before 2000s)
+        member_id = bioguide_id
+        # Check if senator
         lis = legislator.get("id", {}).get("lis")
         if lis:
             legislator["lis"] = lis
+            member_id = lis
         else:
             legislator["lis"] = None
+        legislator["member_id"] = member_id
 
-        # House members use bioguide, Senatores use lis
-        if legislator["bioguide"] in members or legislator["lis"] in members:
+        if member_id in members:
             legislator["has_data"] = True
         else:
             legislator["has_data"] = False
 
-        # Set current to False if it doesn't exist
+        # All current legislators have this field
         if "current" not in legislator:
             legislator["current"] = False
 
-        filter = {"bioguide": bioguide_id, "lis": legislator["lis"]}
+        filter = {"member_id": member_id}
         db_utils.update_one("legislators", legislator, filter)
 
     print(f"Inserted/Updated {len(all_legislators)} legislators in the database.")

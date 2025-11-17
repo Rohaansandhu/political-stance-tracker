@@ -293,11 +293,7 @@ if __name__ == "__main__":
     legislator_col = db_utils.get_collection("legislators")
     ids = []
     for leg in legislator_col.find({"current": True}):
-        # senate v house
-        if leg["lis"]:
-            ids.append(leg["lis"])
-        else:
-            ids.append(leg["bioguide"])
+        ids.append(leg["member_id"])
 
     if args.spec_hash:
         print(f"Generating stats for {args.spec_hash}")
