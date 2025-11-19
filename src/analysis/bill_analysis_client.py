@@ -31,9 +31,7 @@ elif CLIENT == "cerebras":
     )
 
 # Update Schema after every change to prompts/categories/spectrums
-# Schema Version is actually at 3 currently, however, this project is constantly evolving, 
-# so I'm using data from both versions at the moment (to get a starting point for the data)
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 SYSTEM_PROMPT = """
 You are an expert political analyst specializing in legislative classification. 
@@ -41,14 +39,12 @@ You are an expert political analyst specializing in legislative classification.
 Your task is to analyze bills and determine:
 
 1. POLITICAL CATEGORIES: Classify the bill into relevant policy areas (e.g., economic, social, regulatory, environmental, defense, healthcare, etc.)
-- Only use categories and spectrums provided in the user prompt
+- Only use categories provided in the user prompt
 
 2. VOTING POSITION ANALYSIS: For both YES and NO votes, determine:
 - Which political position it represents (liberal/progressive vs conservative)
 - The underlying political philosophy (more government intervention vs less government intervention)
 - Key stakeholder groups that would support/oppose
-
-3. POLITICAL SPECTRUM MAPPING: Place the bill on relevant political spectrums.
 
 Provide your analysis in a structured format with clear reasoning for each classification.
 Be objective and consider multiple political perspectives.
@@ -56,23 +52,17 @@ Be objective and consider multiple political perspectives.
 
 
 def load_political_frameworks():
-    """Load political categories and spectrums from JSON files."""
+    """Load political categories from JSON files."""
     with open("political_definitions/political_categories.json", "r") as f:
         categories = json.load(f)
-
-    with open("political_definitions/political_spectrums.json", "r") as f:
-        spectrums = json.load(f)
 
     with open("political_definitions/reduced_political_categories.json", "r") as f:
         reduced_categories = json.load(f)
 
-    with open("political_definitions/reduced_political_spectrums.json", "r") as f:
-        reduced_spectrums = json.load(f)
-
-    return categories, spectrums, reduced_categories, reduced_spectrums
+    return categories, reduced_categories
 
 
-def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
+def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retries=3):
     """
     Analyze a political bill and return structured JSON classification.
 
@@ -101,53 +91,44 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
         bill_truncated = True
 
     # Load political frameworks
-    categories, spectrums, reduced_categories, reduced_spectrums = (
-        load_political_frameworks()
-    )
+    categories, reduced_categories = load_political_frameworks()
+
+    # Create a comma separated string, joining together all subjects
+    subjects_text = ", ".join(legislative_subjects)
 
     # Make nested function for code readability
     def create_user_prompt(is_retry=False, previous_response=None, use_reduced=False):
         selected_categories = reduced_categories if use_reduced else categories
-        selected_spectrums = reduced_spectrums if use_reduced else spectrums
         base_prompt = f"""Please analyze the following bill and provide a comprehensive political classification:
 
-                        Political Categories
+                        POLITICAL CATEGORIES
                         {selected_categories}
-
-                        Political Spectrums
-                        {selected_spectrums}
 
                         BILL TEXT:
                         {bill_text}
 
+                        LEGISLATIVE_SUBJECTS:
+                        {subjects_text}
+
+                        SUBJECTS_TOP_TERM:
+                        {top_subject}
+
                         Please provide:
-                        1. Classify the bill into one or more relevant political categories and subcategories. 
+                        1. Classify the bill into any relevant political categories and subcategories. 
                            Only use the categories/spectrums provided above. Do NOT create new ones.
                            Determine the impact on each relevant category using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
                            Rate the bill on how conservative/progressive it is within each category. Use a scale of -1 to +1, where:
                             - -1 = fully aligned with the liberal_view
                             - 0 = neutral or mixed
                             - +1 = fully aligned with the conservative_view
-                        2. Rate the bill on any relevant political spectrums. Use a scale of -1 to +1, where:
-                            - -1 = fully aligned with the left/progressive side
-                            - 0 = neutral or mixed
-                            - +1 = fully aligned with the right/conservative side
-                            Determine the impact on each relevant spectrum using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
-                        3. If a spectrum/category is **not relevant**, omit it from the output.
+                        3. If a category is **not relevant**, omit it from the output.
                         4. Analysis of what a YES vote represents politically
                         5. Analysis of what a NO vote represents politically 
-                        6. The estimated impact of the bill (how important it is) 
 
                         Output Format (STRICT JSON)
                         {{
                             "political_categories": {{
-                                "primary": {{
-                                "name": "string",
-                                "partisan_score": -1.0 to 1.0,
-                                "impact_score": 0.0 to 1.0,
-                                "reasoning": "string"
-                                }},
-                                "secondary": [{{
+                                "primary_categories": [{{
                                 "name": "string",
                                 "partisan_score": -1.0 to 1.0,
                                 "impact_score": 0.0 to 1.0,
@@ -159,13 +140,6 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
                                 "impact_score": 0.0 to 1.0,
                                 "reasoning": "string"
                                 }}]
-                            }},
-                            "political_spectrums": {{
-                                "spectrum_name": {{
-                                "partisan_score": -1.0 to 1.0,
-                                "impact_score": 0.0 to 1.0,
-                                "reasoning": "explanation"
-                                }}
                             }},
                             "voting_analysis": {{
                                 "yes_vote": {{
@@ -184,8 +158,6 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
                             "bill_summary": {{
                                 "title": "string",
                                 "key_provisions": ["array"],
-                                "controversy_level": "low|medium|high",
-                                "partisan_divide": "weak|moderate|strong"
                             }}
                         }}
 
@@ -240,7 +212,7 @@ def analyze_bill(bill_text, model="openai/gpt-oss-120b:free", max_retries=3):
             # Parse JSON response
             try:
                 analysis_result = json.loads(response_content)
-                analysis_result = validate(analysis_result, categories, spectrums)
+                analysis_result = validate(analysis_result, categories)
                 if attempt > 0:
                     print(f"Successfully parsed JSON on retry attempt {attempt}")
                 # Add last_modified field for filtering
@@ -339,28 +311,18 @@ def correct_name(name, valid_names, score_threshold=70):
     return name
 
 
-def validate(analysis_result, categories, spectrums):
+def validate(analysis_result, categories):
     """Validate the analysis result against known categories and spectrums."""
     valid_category_names = {cat["name"] for cat in categories["political_categories"]}
-    valid_spectrum_names = {spec["name"] for spec in spectrums["political_spectrums"]}
 
-    # Validate political categories (excluding subcategories, LLM should have freedom to define these)
+    # Validate political categories (excluding subcategories, LLM should have freedom to define subcategories)
     if "political_categories" in analysis_result:
-        pcats = analysis_result["political_categories"]
-        if "primary" in pcats:
-            primary_name = pcats["primary"]["name"]
-            pcats["primary"]["name"] = correct_name(primary_name, valid_category_names)
-        for sec in pcats.get("secondary", []):
-            sec_name = sec["name"]
-            sec["name"] = correct_name(sec_name, valid_category_names)
-
-    # Validate political spectrums
-    if "political_spectrums" in analysis_result:
-        pspecs = analysis_result["political_spectrums"]
-        for spec_name in list(pspecs.keys()):
-            fixed_name = correct_name(spec_name, valid_spectrum_names)
-            if fixed_name != spec_name:
-                pspecs[fixed_name] = pspecs.pop(spec_name)
+        cats = analysis_result["political_categories"]
+        if "primary_categories" in cats:
+            pcats = analysis_result["political_categories"]["primary_categories"]
+            for prim in pcats:
+                prim_name = prim["name"]
+                prim["name"] = correct_name(prim_name, valid_category_names)
 
     return analysis_result
 

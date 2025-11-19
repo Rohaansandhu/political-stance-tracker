@@ -74,9 +74,12 @@ def generate_bill_analyses(force=False, num_of_bills=None):
         if summary_text == "":
             print(f"ERROR: Couldn't find summary text for {bill_id}")
             continue
+        # Not required like summaries, but helpful for LLM to contextualize
+        legislative_subjects = bill_data.get("subjects")
+        top_subject = bill_data.get("subjects_top_term")
 
         # Call LLM Client
-        bill_analysis = bill_analysis_client.analyze_bill(summary_text, model=MODEL)
+        bill_analysis = bill_analysis_client.analyze_bill(summary_text, legislative_subjects, top_subject, MODEL)
 
         # Add bill_id
         bill_analysis["bill_id"] = bill_id
