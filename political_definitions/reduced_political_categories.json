@@ -377,6 +377,283 @@
           "liberal_view": "Protect heritage, equitable management"
         }
       ]
+    },
+    {
+      "name": "Government Role & Regulation",
+      "conservative_view": "Limited government, free markets, individual liberty",
+      "liberal_view": "Active intervention, protect vulnerable, address failures",
+      "subcategories": [
+        { 
+          "name": "Regulatory Oversight",
+          "conservative_view": "Minimal regulation reduces costs",
+          "liberal_view": "Strong oversight prevents abuse"
+        },
+        { 
+          "name": "Government Programs",
+          "conservative_view": "Minimal, targeted, encourage self-reliance",
+          "liberal_view": "Robust safety nets, reduce inequality"
+        },
+        { 
+          "name": "Market Intervention",
+          "conservative_view": "Markets self-correct naturally",
+          "liberal_view": "Intervention corrects failures, ensures equity"
+        }
+      ]
+    },
+    {
+      "name": "Federalism & Governance",
+      "conservative_view": "Decentralized power, state sovereignty, limited federal",
+      "liberal_view": "Strong federal authority, nationwide standards, protect rights",
+      "subcategories": [
+        { 
+          "name": "Federal Authority",
+          "conservative_view": "Limited to enumerated powers",
+          "liberal_view": "Necessary for interstate issues, rights"
+        },
+        { 
+          "name": "State Rights",
+          "conservative_view": "States retain sovereignty, resist overreach",
+          "liberal_view": "Federal law prevails, prevent discrimination"
+        },
+        { 
+          "name": "National Standards",
+          "conservative_view": "State-by-state variation allows experimentation",
+          "liberal_view": "Uniform standards ensure equal protection"
+        }
+      ]
+    },
+    {
+      "name": "Civil Liberties vs Security",
+      "conservative_view": "Security requires strong enforcement, limit some liberties",
+      "liberal_view": "Civil liberties fundamental, protect even when threatened",
+      "subcategories": [
+        { 
+          "name": "Surveillance & Privacy",
+          "conservative_view": "Law enforcement needs surveillance tools",
+          "liberal_view": "Mass surveillance violates rights"
+        },
+        { 
+          "name": "Law Enforcement Powers",
+          "conservative_view": "Police need strong powers, discretion",
+          "liberal_view": "Oversight and limits prevent abuse"
+        },
+        { 
+          "name": "Due Process",
+          "conservative_view": "Important but shouldn't delay justice",
+          "liberal_view": "Robust protections cornerstone of freedom"
+        }
+      ]
+    },
+    {
+      "name": "Populism vs Institutionalism",
+      "conservative_view": "Elites disconnected, popular will over expertise",
+      "liberal_view": "Institutions, expertise, norms ensure stability",
+      "subcategories": [
+        { 
+          "name": "Expert Authority",
+          "conservative_view": "Experts often wrong, biased",
+          "liberal_view": "Specialized knowledge essential for policy"
+        },
+        { 
+          "name": "Institutional Trust",
+          "conservative_view": "Institutions captured by liberal elites",
+          "liberal_view": "Checks and balances prevent chaos"
+        },
+        { 
+          "name": "Popular Sovereignty",
+          "conservative_view": "People should directly shape policy",
+          "liberal_view": "Representative democracy protects minorities"
+        }
+      ]
+    },
+    {
+      "name": "Trade & Globalization",
+      "conservative_view": "Protect workers, national interests over integration",
+      "liberal_view": "Free trade creates prosperity, cooperation",
+      "subcategories": [
+        { 
+          "name": "Trade Agreements",
+          "conservative_view": "Bilateral deals prioritize American jobs",
+          "liberal_view": "Multilateral agreements increase prosperity"
+        },
+        { 
+          "name": "Tariffs & Protection",
+          "conservative_view": "Strategic tariffs protect vital industries",
+          "liberal_view": "Tariffs raise prices, invite retaliation"
+        },
+        { 
+          "name": "Supply Chains",
+          "conservative_view": "Reshore for security, jobs",
+          "liberal_view": "Global supply chains lower costs"
+        },
+        { 
+          "name": "Global Integration",
+          "conservative_view": "Economic nationalism prioritizes workers",
+          "liberal_view": "Interconnected economy benefits all"
+        }
+      ]
+    },
+    {
+      "name": "Corporate Power & Business",
+      "conservative_view": "Business freedom fosters innovation, growth",
+      "liberal_view": "Corporations require strong regulation",
+      "subcategories": [
+        { 
+          "name": "Corporate Regulation",
+          "conservative_view": "Minimal regulation allows innovation",
+          "liberal_view": "Regulation prevents fraud, protects stakeholders"
+        },
+        { 
+          "name": "Antitrust & Monopolies",
+          "conservative_view": "Market dominance through innovation legitimate",
+          "liberal_view": "Concentrated power requires aggressive enforcement"
+        },
+        { 
+          "name": "Small Business Support",
+          "conservative_view": "Reduce regulations and taxes for all",
+          "liberal_view": "Targeted support counters corporate advantages"
+        },
+        { 
+          "name": "Corporate Incentives",
+          "conservative_view": "Incentives attract investment, create jobs",
+          "liberal_view": "Corporate welfare rarely delivers benefits"
+        }
+      ]
+    },
+    {
+      "name": "Tradition vs Progress",
+      "conservative_view": "Traditional wisdom provides moral foundation",
+      "liberal_view": "Evolve based on reason, science, expanding morality",
+      "subcategories": [
+        { 
+          "name": "Religious Influence",
+          "conservative_view": "Faith provides moral framework",
+          "liberal_view": "Secular governance protects all beliefs"
+        },
+        { 
+          "name": "Historical Norms",
+          "conservative_view": "Time-tested practices contain wisdom",
+          "liberal_view": "Historical norms perpetuated injustice"
+        },
+        { 
+          "name": "Science vs Faith",
+          "conservative_view": "Science and faith both provide truth",
+          "liberal_view": "Evidence-based approach ensures effectiveness"
+        },
+        { 
+          "name": "Social Evolution",
+          "conservative_view": "Gradual change respects institutions",
+          "liberal_view": "Progress toward equality should be embraced"
+        }
+      ]
+    },
+    {
+      "name": "Individual vs Collective Responsibility",
+      "conservative_view": "Personal responsibility, voluntary cooperation paramount",
+      "liberal_view": "Collective action addresses systemic problems",
+      "subcategories": [
+        { 
+          "name": "Welfare & Assistance",
+          "conservative_view": "Welfare creates dependency",
+          "liberal_view": "Safety net provides dignity, opportunity"
+        },
+        { 
+          "name": "Healthcare Responsibility",
+          "conservative_view": "Individuals secure own healthcare",
+          "liberal_view": "Healthcare is right requiring collective solution"
+        },
+        { 
+          "name": "Community Solutions",
+          "conservative_view": "Churches, charities address needs better",
+          "liberal_view": "Voluntary charity insufficient for systemic issues"
+        },
+        { 
+          "name": "Public Goods",
+          "conservative_view": "Privatize where possible for efficiency",
+          "liberal_view": "Some services too important for profit motive"
+        }
+      ]
+    },
+    {
+      "name": "Democratic Governance",
+      "conservative_view": "Strong executive, decisive governance, law and order",
+      "liberal_view": "Checks and balances, transparency, protect minorities",
+      "subcategories": [
+        { 
+          "name": "Executive Power",
+          "conservative_view": "Strong executive necessary for action",
+          "liberal_view": "Executive power must be constrained"
+        },
+        { 
+          "name": "Transparency & Press",
+          "conservative_view": "Security sometimes requires confidentiality",
+          "liberal_view": "Transparency and free press essential"
+        },
+        { 
+          "name": "Voting & Elections",
+          "conservative_view": "Integrity through ID, electoral college",
+          "liberal_view": "Expand access, popular vote"
+        },
+        { 
+          "name": "Democratic Norms",
+          "conservative_view": "Respect law, order, traditional institutions",
+          "liberal_view": "Preserve norms, civil discourse"
+        }
+      ]
+    },
+    {
+      "name": "Criminal Justice",
+      "conservative_view": "Tough on crime, strong enforcement, public safety",
+      "liberal_view": "Reform system, rehabilitation, reduce incarceration",
+      "subcategories": [
+        { 
+          "name": "Sentencing & Punishment",
+          "conservative_view": "Serious punishment deters crime",
+          "liberal_view": "Mass incarceration ineffective, unjust"
+        },
+        { 
+          "name": "Policing & Law Enforcement",
+          "conservative_view": "Support and fund police fully",
+          "liberal_view": "Reform through accountability, oversight"
+        },
+        { 
+          "name": "Rehabilitation vs Punishment",
+          "conservative_view": "Punishment and deterrence primary",
+          "liberal_view": "Rehabilitation reduces recidivism better"
+        },
+        { 
+          "name": "Drug Policy",
+          "conservative_view": "Maintain enforcement while offering treatment",
+          "liberal_view": "Decriminalize, treat as health issue"
+        }
+      ]
+    },
+    {
+      "name": "Immigration Policy",
+      "conservative_view": "Strict enforcement, merit-based, protect workers",
+      "liberal_view": "Humane system, pathways to citizenship, family unity",
+      "subcategories": [
+        { 
+          "name": "Legal Immigration",
+          "conservative_view": "Merit-based prioritizing skills needed",
+          "liberal_view": "Balanced system including family reunification"
+        },
+        { 
+          "name": "Illegal Immigration",
+          "conservative_view": "Strong enforcement, consequences for illegal entry",
+          "liberal_view": "Pathway to status, humane enforcement"
+        },
+        { 
+          "name": "Border Security",
+          "conservative_view": "Secure border essential to sovereignty",
+          "liberal_view": "Smart security, address root causes"
+        },
+        { 
+          "name": "Asylum & Refugees",
+          "conservative_view": "Tighten rules, limit admissions, prioritize vetting",
+          "liberal_view": "Robust asylum, generous refugee admissions"
+        }
+      ]
     }
   ]
 }
