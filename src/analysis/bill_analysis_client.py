@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from openai import OpenAI
 from dotenv import load_dotenv
-from schema.bill_analyses import BillAnalysis, Vote, VotingAnalysis, Category, PoliticalCategories, BillSummary
+from schema.bill_analyses import BillAnalysis
 import os
 import json
 import re
@@ -216,6 +216,7 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
                 # Check if result json has all required fields
                 if not validate(analysis_result):
                     print("JSON did not have required fields... retrying")
+                    continue
                 # Check if category names match the categories supplied
                 analysis_result = validate_names(analysis_result, categories)
                 if attempt > 0:

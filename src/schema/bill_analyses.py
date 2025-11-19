@@ -30,16 +30,6 @@ class PoliticalCategories(BaseModel):
     subcategories: list[Category]
 
 class BillAnalysis(BaseModel):
-    bill_id: str
     bill_summary: BillSummary
-    bill_truncated: bool
-    last_modified: str
     political_categories: PoliticalCategories
-    # political_spectrums: object
-    schema_version: int
     voting_analysis: VotingAnalysis
-    model: str
-    bill_number: int
-    bill_type: str
-    chamber: str
-    congress: str
