@@ -1,5 +1,6 @@
 import subprocess
 import argparse
+from analysis.bill_analysis_client import SCHEMA_VERSION
 import db.db_utils as db_utils
 
 # Models I don't want running, this whole file is really just for me. 
@@ -13,7 +14,8 @@ def get_available_filters(collection):
     chambers = set()
     models = set()
 
-    for doc in collection.find({}, {"congress": 1, "chamber": 1, "model": 1}):
+    # Use latest schema version by default
+    for doc in collection.find({"schema_version": SCHEMA_VERSION}, {"congress": 1, "chamber": 1, "model": 1}):
         if "congress" in doc:
             congresses.add(doc["congress"])
         if "chamber" in doc:

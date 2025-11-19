@@ -128,25 +128,26 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
         #             }
         #         )
 
-        # Process categories - single iteration
+        # Process categories
         political_categories = bill_analysis.get("political_categories", {})
 
-        # Primary category
-        primary_category = political_categories.get("primary_categories", {})
-        if isinstance(primary_category, dict) and primary_category.get("name"):
-            category_name = primary_category.get("name", "")
-            partisan_score = primary_category.get("partisan_score", 0)
-            impact_score = primary_category.get("impact_score", 0)
-            weighted_score = partisan_score * impact_score * vote_value
+        # Primary categories
+        primary_categories = political_categories.get("primary_categories", [])
+        for primary_category in primary_categories:
+            if isinstance(primary_category, dict) and primary_category.get("name"):
+                category_name = primary_category.get("name", "")
+                partisan_score = primary_category.get("partisan_score", 0)
+                impact_score = primary_category.get("impact_score", 0)
+                weighted_score = partisan_score * impact_score * vote_value
 
-            # Ignore bills that have no partisan relevance
-            if partisan_score != 0:
-                vote_data = {
-                    "bill_id": bill_id,
-                    "weighted_score": weighted_score,
-                }
+                # Ignore bills that have no partisan relevance
+                if partisan_score != 0:
+                    vote_data = {
+                        "bill_id": bill_id,
+                        "weighted_score": weighted_score,
+                    }
 
-                primary_category_votes[category_name].append(vote_data)
+                    primary_category_votes[category_name].append(vote_data)
 
         # Subcategories
         for subcategory in political_categories.get("subcategories", []):
@@ -452,7 +453,7 @@ def generate_rankings(profiles):
     # Collect data from every profile
     for profile in profiles:
         is_current = profile["member_id"] in current_legislators
-        for field in ["detailed_spectrums", "main_categories"]:
+        for field in ["primary_categories"]:
             data = profile.get(field, {})
 
             for category, details in data.items():
@@ -482,6 +483,11 @@ def generate_rankings(profiles):
                             "name": profile.get("name"),
                         }
                     )
+    
+    # No rankings generated
+    if all_rows == [] or all_current_rows == []:
+        print("Cant generate rankings, not enough data yet")
+        return profiles
 
     # Create one big DataFrame
     df = pd.DataFrame(all_rows)
@@ -511,7 +517,7 @@ def generate_rankings(profiles):
     # Now push results back into each profile
     for profile in profiles:
         is_current = profile["member_id"] in current_legislators
-        for field in "main_categories":
+        for field in ["primary_categories"]:
             sub = df[(df["field"] == field) & (df["member_id"] == profile["member_id"])]
 
             for _, row in sub.iterrows():
