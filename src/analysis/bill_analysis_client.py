@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from openai import OpenAI
 from dotenv import load_dotenv
+from schema.bill_analyses import BillAnalysis, Vote, VotingAnalysis, Category, PoliticalCategories, BillSummary
 import os
 import json
 import re
@@ -166,7 +167,7 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
         if is_retry and previous_response:
             retry_prompt = f"""
                         
-                        RETRY ATTEMPT: Your previous response had invalid JSON format:
+                        RETRY ATTEMPT: Your previous response had invalid JSON format and/or did not have the required fields:
                         {previous_response[:500]}...
                         
                         Please fix the JSON syntax errors and return ONLY valid JSON."""
@@ -212,7 +213,11 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
             # Parse JSON response
             try:
                 analysis_result = json.loads(response_content)
-                analysis_result = validate(analysis_result, categories)
+                # Check if result json has all required fields
+                if not validate(analysis_result):
+                    print("JSON did not have required fields... retrying")
+                # Check if category names match the categories supplied
+                analysis_result = validate_names(analysis_result, categories)
                 if attempt > 0:
                     print(f"Successfully parsed JSON on retry attempt {attempt}")
                 # Add last_modified field for filtering
@@ -310,8 +315,15 @@ def correct_name(name, valid_names, score_threshold=70):
             print(f"[correct_name] No matches found for '{name}'")
     return name
 
+def validate(analysis_result):
+    try:
+        BillAnalysis.model_validate(analysis_result)
+        return True
+    except Exception:
+        return False
 
-def validate(analysis_result, categories):
+
+def validate_names(analysis_result, categories):
     """Validate the analysis result against known categories and spectrums."""
     valid_category_names = {cat["name"] for cat in categories["political_categories"]}
 
