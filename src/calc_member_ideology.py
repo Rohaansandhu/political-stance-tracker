@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 from analysis.bill_analysis_client import SCHEMA_VERSION
 import db.db_utils as db_utils
+from pymongo import UpdateOne
 
 from schema.legislator_profiles import LegislatorProfile, CategoryStats
 
@@ -209,7 +210,6 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
 
     # Create standardized spectrum scores (map to common left-right, authoritarian-libertarian)
     # standard_scores = standardize_spectrum_scores(ideology_data["spectrum_scores"])
-
 
     profile = {
         "member_id": legislator_info.get("member_id"),
@@ -483,7 +483,7 @@ def generate_rankings(profiles):
                             "name": profile.get("name"),
                         }
                     )
-    
+
     # No rankings generated
     if all_rows == [] or all_current_rows == []:
         print("Cant generate rankings, not enough data yet")
@@ -570,18 +570,19 @@ def generate_rankings(profiles):
 def write_profiles_to_db(profiles):
     """Write legislator profiles to MongoDB collection."""
     count = 0
+    actions = []
     for profile in profiles:
-        try:
-            query = {
-                "member_id": profile["member_id"],
-                "model": profile["model"],
-                "schema_version": profile["schema_version"],
-                "spec_hash": profile["spec_hash"],
-            }
-            db_utils.update_one(OUTPUT_COLLECTION, profile, query)
-            count += 1
-        except Exception as e:
-            print(f"Failed to insert/update profile for {profile['name']}: {e}")
+        query = {
+            "member_id": profile["member_id"],
+            "model": profile["model"],
+            "schema_version": profile["schema_version"],
+            "spec_hash": profile["spec_hash"],
+        }
+        actions.append(UpdateOne(query, {"$set": profile}, upsert=True))
+        count += 1
+
+    if actions:
+        db_utils.bulk_write(OUTPUT_COLLECTION, actions)
     print(f"Updated profile for {count} members")
 
 

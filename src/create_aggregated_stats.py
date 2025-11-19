@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 from typing import Dict, List, Any
 import db.db_utils as db_utils
+from pymongo import UpdateOne
 
 
 def calculate_correlation(x: List[float], y: List[float]) -> float:
@@ -258,6 +259,8 @@ def write_stats_to_db(stats: List[Dict]):
         return
 
     print(f"Writing {len(stats)} stats to database...")
+    histogram_actions = []
+    scatter_actions = []
     for stat in stats:
         # Unique key: spec_hash + field (spectrum vs category) + subject (specific cat/spec) + chart_type
         key_vals = {
@@ -269,9 +272,14 @@ def write_stats_to_db(stats: List[Dict]):
         }
         # TODO: Handle graph collections better. It's a little messy right now
         if stat["chart_type"] == "scatter":
-            db_utils.update_one("scatter_stats", stat, key_vals)
+            scatter_actions.append(UpdateOne(key_vals, {"$set": stat}, upsert=True))
         elif stat["chart_type"] == "histogram":
-            db_utils.update_one("histogram_stats", stat, key_vals)
+            histogram_actions.append(UpdateOne(key_vals, {"$set": stat}, upsert=True))
+
+    if histogram_actions:
+        db_utils.bulk_write("histogram_stats", histogram_actions)
+    if scatter_actions:
+        db_utils.bulk_write("scatter", scatter_actions)
 
     print("Write complete!")
 

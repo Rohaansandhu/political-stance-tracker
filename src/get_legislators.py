@@ -3,13 +3,16 @@ import os
 import json
 import db.db_utils as db_utils
 import argparse
+from pymongo import UpdateOne
 
 
 def get_current_legislators():
     """Fetch current legislators JSON and save to data/current_legislators.json"""
 
-    # Load JSON data 
-    currentUrl = "https://unitedstates.github.io/congress-legislators/legislators-current.json"
+    # Load JSON data
+    currentUrl = (
+        "https://unitedstates.github.io/congress-legislators/legislators-current.json"
+    )
 
     response = requests.get(currentUrl)
     response.raise_for_status()  # raises an error if request failed
@@ -28,14 +31,15 @@ def get_current_legislators():
 
     print(f"JSON file created at {json_path}")
 
+
 def get_historical_legislators():
     """Fetch historical legislators JSON and save to data/historical_legislators.json"""
 
-    # Load JSON data 
+    # Load JSON data
     historicalUrl = "https://unitedstates.github.io/congress-legislators/legislators-historical.json"
 
     response = requests.get(historicalUrl)
-    response.raise_for_status() 
+    response.raise_for_status()
     data = response.json()
 
     # Make sure output directory exists
@@ -50,6 +54,7 @@ def get_historical_legislators():
         json.dump(data, f, indent=2)
 
     print(f"JSON file created at {json_path}")
+
 
 def add_legislators_to_db():
     """Fetch current and historical legislators and add to MongoDB collection"""
@@ -74,12 +79,13 @@ def add_legislators_to_db():
     # Combine data
     all_legislators = current_data + historical_data
 
+    actions = []
     # Insert or update legislators in the database
     for legislator in all_legislators:
         # extract bioguide ID for indexing
         bioguide_id = legislator.get("id", {}).get("bioguide")
         if not bioguide_id:
-            continue 
+            continue
         legislator["bioguide"] = bioguide_id
 
         # TODO: Figure out how to handle data when a legislator goes from House to Senate
@@ -104,14 +110,21 @@ def add_legislators_to_db():
             legislator["current"] = False
 
         filter = {"member_id": member_id}
-        db_utils.update_one("legislators", legislator, filter)
+        actions.append(UpdateOne(filter, {"$set": legislator}, upsert=True))
+
+    if actions:
+        db_utils.bulk_write("legislators", actions)
 
     print(f"Inserted/Updated {len(all_legislators)} legislators in the database.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--update", action="store_true", help="Update legislator jsons before adding to DB")
+    parser.add_argument(
+        "--update",
+        action="store_true",
+        help="Update legislator jsons before adding to DB",
+    )
     args = parser.parse_args()
     if args.update:
         get_historical_legislators()

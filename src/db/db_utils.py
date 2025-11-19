@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import pymongo
 from pymongo import DESCENDING, ASCENDING, MongoClient
 from db.start_mongod import PORT
 import os
@@ -21,7 +22,7 @@ COLLECTION_LIST = [
 
 def get_db():
     """Return a reference to the MongoDB database."""
-    client = MongoClient(MONGO_URI)
+    client: MongoClient = MongoClient(MONGO_URI)
     return client[DB_NAME]
 
 
@@ -34,7 +35,12 @@ def ensure_indexes():
         unique=True,
     )
     db.legislator_profiles.create_index(
-        [("member_id", ASCENDING), ("model", ASCENDING), ("schema_version", DESCENDING), ("spec_hash", ASCENDING)],
+        [
+            ("member_id", ASCENDING),
+            ("model", ASCENDING),
+            ("schema_version", DESCENDING),
+            ("spec_hash", ASCENDING),
+        ],
         unique=True,
     )
     db.member_votes.create_index([("member_id", ASCENDING)], unique=True)
@@ -67,6 +73,12 @@ def get_collection(collection_name: str):
     """Return a reference to the specified collection."""
     db = get_db()
     return db[collection_name]
+
+
+def bulk_write(collection: str, actions: list):
+    """Bulk write `actions` into `collection` in order of `actions`"""
+    db = get_db()
+    return db[collection].bulk_write(actions)
 
 
 # Use utils as a script to ensure indexes in database (only needs to be run once)
