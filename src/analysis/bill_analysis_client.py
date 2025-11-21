@@ -62,8 +62,8 @@ def load_political_frameworks():
 
     return categories, reduced_categories
 
-
-def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retries=3):
+# TODO: Split up this function, clean more of the processing logic
+def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retries=4):
     """
     Analyze a political bill and return structured JSON classification.
 
@@ -97,8 +97,16 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
     # Create a comma separated string, joining together all subjects
     subjects_text = ", ".join(legislative_subjects)
 
-    # Make nested function for code readability
-    def create_user_prompt(is_retry=False, previous_response=None, use_reduced=False):
+    # Make nested function for separation
+    # TODO: Clean this up
+    def create_user_prompt(
+        is_retry,
+        previous_response,
+        use_reduced,
+        bad_category=False,
+        bad_format=False,
+        bad_categories="",
+    ):
         selected_categories = reduced_categories if use_reduced else categories
         base_prompt = f"""Please analyze the following bill and provide a comprehensive political classification:
 
@@ -165,26 +173,63 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
                         CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON object."""
 
         if is_retry and previous_response:
-            retry_prompt = f"""
-                        
-                        RETRY ATTEMPT: Your previous response had invalid JSON format and/or did not have the required fields:
-                        {previous_response[:500]}...
-                        
-                        Please fix the JSON syntax errors and return ONLY valid JSON."""
+            retry_prompt = ""
+            # Category outside of defined primary_categories used
+            if bad_category:
+                retry_prompt = f""""
+
+                    RETRY ATTEMPT: Your response included {bad_categories} in the primary_categories section, 
+                    but these categories are either subcategories, or misspellling of major categories:
+                    {previous_response[:500]}...
+
+                    In the primary_categories section, you MUST use only the top-level political categories defined, 
+                    and these categories must be spelled exactly as provided.
+
+                    Please revise your response by:
+                    Renaming the category name to its exact spelling or by
+                    Removing the bad category name from primary_categories and adding it to subcategories
+                    """
+
+            # JSON format error
+            if bad_format:
+                retry_prompt = f"""
+                    
+                    RETRY ATTEMPT: Your previous response had invalid JSON format and/or did not have the required fields:
+                    {previous_response[:500]}...
+                    
+                    Please fix the JSON syntax errors and return ONLY valid JSON."""
+
             return base_prompt + retry_prompt
 
         return base_prompt
 
+    # Set flags for first attempt
     last_response = None
     use_reduced = False
+    bad_category = False
+    bad_categories = []
+    bad_format = False
 
     for attempt in range(max_retries + 1):
+
         try:
             is_retry = attempt > 0
-            if use_reduced:
-                user_prompt = create_user_prompt(False, None, use_reduced)
+            # Retry for bad formats, length, or bad category names
+            if bad_format:
+                user_prompt = create_user_prompt(
+                    is_retry, last_response, use_reduced, bad_format=True
+                )
+            elif bad_category:
+                user_prompt = create_user_prompt(
+                    is_retry,
+                    last_response,
+                    use_reduced,
+                    bad_category=bad_category,
+                    bad_categories=", ".join(bad_categories),
+                )
+            # First prompt
             else:
-                user_prompt = create_user_prompt(is_retry, last_response, use_reduced)
+                user_prompt = create_user_prompt(False, None, use_reduced)
 
             # Use temperature of 0 for deterministic output
             completion = client.chat.completions.create(
@@ -213,14 +258,23 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
             # Parse JSON response
             try:
                 analysis_result = json.loads(response_content)
+                # Successfully parsed JSON if it hits here
+                bad_format = False
                 # Check if result json has all required fields
                 if not validate(analysis_result):
                     print("JSON did not have required fields... retrying")
+                    bad_format = True
+                    bad_category = False
+                    bad_categories = []
                     continue
-                # Check if category names match the categories supplied
-                analysis_result = validate_names(analysis_result, categories)
+                # Check if category names match the categories supplied, reprompt if we can't validate
+                analysis_result, bad_category, bad_categories = validate_names(analysis_result, categories)
+                if bad_category:
+                    print(f"Bad categories were found in primary categories: {', '.join(bad_categories)}... Retrying")
+                    continue
+
                 if attempt > 0:
-                    print(f"Successfully parsed JSON on retry attempt {attempt}")
+                    print(f"Successfully generated analysis on retry attempt {attempt}")
                 # Add last_modified field for filtering
                 analysis_result["last_modified"] = datetime.now(
                     timezone.utc
@@ -253,6 +307,9 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
                 print(
                     f"API call failed on attempt {attempt + 1}, retrying... Error: {e}"
                 )
+                bad_format = True
+                bad_category = False
+                bad_categories = []
                 continue
 
             raise Exception(f"API call failed: {e}")
@@ -316,6 +373,7 @@ def correct_name(name, valid_names, score_threshold=70):
             print(f"[correct_name] No matches found for '{name}'")
     return name
 
+
 def validate(analysis_result):
     try:
         BillAnalysis.model_validate(analysis_result)
@@ -328,7 +386,12 @@ def validate_names(analysis_result, categories):
     """Validate the analysis result against known categories and spectrums."""
     valid_category_names = {cat["name"] for cat in categories["political_categories"]}
 
-    # Validate political categories (excluding subcategories, LLM should have freedom to define subcategories)
+    # Set to True if we couldn't fix names manually
+    reprompt = False
+
+    bad_categories = []
+
+    # Correct names of political categories
     if "political_categories" in analysis_result:
         cats = analysis_result["political_categories"]
         if "primary_categories" in cats:
@@ -336,8 +399,12 @@ def validate_names(analysis_result, categories):
             for prim in pcats:
                 prim_name = prim["name"]
                 prim["name"] = correct_name(prim_name, valid_category_names)
+                # At least one primary category could not be fixed
+                if prim["name"] not in valid_category_names:
+                    bad_categories.append(prim["name"])
+                    reprompt = True
 
-    return analysis_result
+    return analysis_result, reprompt, bad_categories
 
 
 def analyze_bills_batch(bill_texts, model="openai/gpt-oss-120b:free", max_retries=2):
