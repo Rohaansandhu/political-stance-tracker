@@ -42,7 +42,9 @@ def load_bills():
                     data = load_json_file(data_file)
                     actions.append(
                         UpdateOne(
-                            {"bill_id": data["bill_id"]}, {"$set": data}, upsert=True
+                            {"bill_id": data["bill_id"]},
+                            {"$set": data, "$currentDate": {"last_modified": True}},
+                            upsert=True,
                         )
                     )
                 except Exception as e:
@@ -84,7 +86,7 @@ def load_votes():
                         actions.append(
                             UpdateOne(
                                 {"vote_id": data["vote_id"]},
-                                {"$set": data},
+                                {"$set": data, "$currentDate": {"last_modified": True}},
                                 upsert=True,
                             )
                         )

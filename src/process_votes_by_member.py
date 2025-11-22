@@ -83,12 +83,6 @@ def process_vote_record(vote_data, member_votes):
                 {
                     "vote_id": vote_id,
                     "bill": bill,
-                    "chamber": chamber,
-                    "date": date,
-                    "category": category,
-                    "question": question,
-                    "subject": subject,
-                    "source_url": source_url,
                     "vote": pos,
                 }
             )

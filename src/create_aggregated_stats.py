@@ -272,9 +272,21 @@ def write_stats_to_db(stats: List[Dict]):
         }
         # TODO: Handle graph collections better. It's a little messy right now
         if stat["chart_type"] == "scatter":
-            scatter_actions.append(UpdateOne(key_vals, {"$set": stat}, upsert=True))
+            scatter_actions.append(
+                UpdateOne(
+                    key_vals,
+                    {"$set": stat, "$currentDate": {"last_modified": True}},
+                    upsert=True,
+                )
+            )
         elif stat["chart_type"] == "histogram":
-            histogram_actions.append(UpdateOne(key_vals, {"$set": stat}, upsert=True))
+            histogram_actions.append(
+                UpdateOne(
+                    key_vals,
+                    {"$set": stat, "$currentDate": {"last_modified": True}},
+                    upsert=True,
+                )
+            )
 
     if histogram_actions:
         db_utils.bulk_write("histogram_stats", histogram_actions)

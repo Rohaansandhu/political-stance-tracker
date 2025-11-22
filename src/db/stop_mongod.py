@@ -1,7 +1,7 @@
 import logging
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure, OperationFailure
-import db.start_mongod as sm
+import start_mongod as sm
 
 log = logging.getLogger(__name__)
 

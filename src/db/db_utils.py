@@ -1,5 +1,4 @@
 from dotenv import load_dotenv
-import pymongo
 from pymongo import DESCENDING, ASCENDING, MongoClient
 from db.start_mongod import PORT
 import os
@@ -10,14 +9,6 @@ load_dotenv()
 # Specify your own DB name and MONGO_URI in .env or here
 MONGO_URI = os.getenv("MONGO_URI", f"mongodb://localhost:{PORT}/")
 DB_NAME = os.getenv("DB_NAME", "political_stance_tracker")
-
-COLLECTION_LIST = [
-    "bill_data",
-    "bill_analyses",
-    "rollcall_votes",
-    "member_votes",
-    "legislator_profiles",
-]
 
 
 def get_db():
@@ -58,14 +49,18 @@ def update_one(collection_name, document, key_fields):
 
     # Build filter from key fields
     filter = {field: document[field] for field in key_fields}
-    collection.update_one(filter, {"$set": document}, upsert=True)
+    collection.update_one(
+        filter, {"$set": document, "$currentDate": {"last_modified": True}}, upsert=True
+    )
 
 
 def update_many(collection_name: str, updates: list, query: dict):
     """Update multiple documents in the given collection."""
     db = get_db()
     collection = db[collection_name]
-    result = collection.update_many(query, {"$set": updates}, upsert=True)
+    result = collection.update_many(
+        query, {"$set": updates, "$currentDate": {"last_modified": True}}, upsert=True
+    )
     return result.modified_count
 
 

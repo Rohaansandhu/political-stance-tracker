@@ -8,7 +8,7 @@ PORT = 27017
 DB_PATH = Path("data/db")
 LOG_PATH = Path("data/mongodlogs/mongod.log")
 # optional, uncomment for proper replication
-# REPLICA_SET_NAME = "LocalReplica0"  
+REPLICA_SET_NAME = "LocalReplica0"  
 REPLICA_SET_NAME = None
 
 logging.basicConfig(level=logging.INFO)

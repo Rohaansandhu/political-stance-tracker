@@ -49,14 +49,14 @@ def find_stakeholders(bill_analyses, chamber, spec_hash):
 
             for stakeholder in stakeholders:
                 if isinstance(stakeholder, str):
-                    stakeholder_freq[stakeholder] = stakeholder_freq.get(stakeholder, 0) + 1
+                    stakeholder_freq[stakeholder] = (
+                        stakeholder_freq.get(stakeholder, 0) + 1
+                    )
 
         # Filter out items that only have a count of 1, likely too specific to include
         # Also, the document is too large without filtering
         # TODO: Combine similar stakeholders (slight wording differences)
-        filtered_freq = {
-            k: v for k, v in stakeholder_freq.items() if v > 1
-        }
+        filtered_freq = {k: v for k, v in stakeholder_freq.items() if v > 1}
 
         if filtered_freq:
             filtered_freq["member_id"] = legislator_data["member_id"]
@@ -75,7 +75,13 @@ def write_stakeholders_to_db(legislators):
             "member_id": profile["member_id"],
             "spec_hash": profile["spec_hash"],
         }
-        actions.append(UpdateOne(query, {"$set": profile}, upsert=True))
+        actions.append(
+            UpdateOne(
+                query,
+                {"$set": profile, "$currentDate": {"last_modified": True}},
+                upsert=True,
+            )
+        )
         count += 1
 
     if actions:

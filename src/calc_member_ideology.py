@@ -578,7 +578,13 @@ def write_profiles_to_db(profiles):
             "schema_version": profile["schema_version"],
             "spec_hash": profile["spec_hash"],
         }
-        actions.append(UpdateOne(query, {"$set": profile}, upsert=True))
+        actions.append(
+            UpdateOne(
+                query,
+                {"$set": profile, "$currentDate": {"last_modified": True}},
+                upsert=True,
+            )
+        )
         count += 1
 
     if actions:

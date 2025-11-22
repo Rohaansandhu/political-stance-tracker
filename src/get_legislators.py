@@ -110,7 +110,7 @@ def add_legislators_to_db():
             legislator["current"] = False
 
         filter = {"member_id": member_id}
-        actions.append(UpdateOne(filter, {"$set": legislator}, upsert=True))
+        actions.append(UpdateOne(filter, {"$set": legislator, "$currentDate": {"last_modified": True}}, upsert=True))
 
     if actions:
         db_utils.bulk_write("legislators", actions)

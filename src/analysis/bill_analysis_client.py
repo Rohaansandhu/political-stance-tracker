@@ -275,10 +275,7 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
 
                 if attempt > 0:
                     print(f"Successfully generated analysis on retry attempt {attempt}")
-                # Add last_modified field for filtering
-                analysis_result["last_modified"] = datetime.now(
-                    timezone.utc
-                ).isoformat()
+
                 # Add schema_version for future compatibility
                 analysis_result["schema_version"] = SCHEMA_VERSION
                 # Add if bill was truncated

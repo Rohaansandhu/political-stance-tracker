@@ -4,7 +4,7 @@ from analysis.bill_analysis_client import SCHEMA_VERSION
 import db.db_utils as db_utils
 
 # Models I don't want running, this whole file is really just for me. 
-bannedModels = {"llama-4-scout-17b-16e-instruct", "deepseek/deepseek-chat-v3.1:free", "gemini-2.5-flash-lite", "openai/gpt-oss-20b:free", "x-ai/grok-4-fast:free"}
+bannedModels = {"openrouter/sherlock-think-alpha","llama-4-scout-17b-16e-instruct", "deepseek/deepseek-chat-v3.1:free", "openai/gpt-oss-20b:free", "x-ai/grok-4-fast:free"}
 
 def get_available_filters(collection):
     """Query MongoDB to find all available values for congress, chamber, and model."""
@@ -42,13 +42,14 @@ def generate_combinations(congresses, chambers):
 
     # for c in congresses:
     #     yield {"--congress": str(c)}
-    for ch in chambers:
-        yield {"--chamber": ch}
+    for schema_version in ["2", "3"]:
+        for ch in chambers:
+            yield {"--chamber": ch, "--schema": schema_version}
 
     # Combine all two-way combinations
-    for c in congresses:
-        for ch in chambers:
-            yield {"--congress": str(c), "--chamber": ch}
+    # for c in congresses:
+    #     for ch in chambers:
+    #         yield {"--congress": str(c), "--chamber": ch}
 
 
 def run_all_combinations():
