@@ -42,9 +42,8 @@ def generate_combinations(congresses, chambers):
 
     # for c in congresses:
     #     yield {"--congress": str(c)}
-    for schema_version in ["2", "3"]:
-        for ch in chambers:
-            yield {"--chamber": ch, "--schema": schema_version}
+    for ch in chambers:
+            yield {"--chamber": ch}
 
     # Combine all two-way combinations
     # for c in congresses:

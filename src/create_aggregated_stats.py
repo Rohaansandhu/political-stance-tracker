@@ -178,6 +178,7 @@ def generate_stats(spec_hash: str, current_ids: list) -> List[Dict]:
     fields = [
         "detailed_spectrums",
         "main_categories",
+        "primary_categories"
     ]
 
     # Extract all categories for each field
@@ -317,8 +318,10 @@ if __name__ == "__main__":
 
     if args.spec_hash:
         print(f"Generating stats for {args.spec_hash}")
-        stats = generate_stats(args.spec_hash)
+        stats = generate_stats(args.spec_hash, [])
         all_stats.extend(stats)
+        current_stats = generate_stats(args.spec_hash, ids)
+        all_stats.extend(current_stats)
     else:
         print("Generating stats for all spec_hashes")
         spec_hashes = find_all_spec_hashes()

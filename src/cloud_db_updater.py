@@ -1,10 +1,3 @@
-# Script to update the cloud db(s), attempt to only add changes from local to cloud. 
-# CANNOT delete data, must find a way to track changes after a certain timestamp
-# Here are the cases we need to account for
-# Insert document into collection if it doesn't exist in the cloud db.
-# If there is a matching document in the cloud db, check last_modified
-# If last_modified in the cloud is "earlier" than the last_modified in the local db, update with the local db version
-# Otherwise, ignore, as the local db has a more outdated version
 import db.db_utils as db_utils
 from db.db_utils import DB_NAME
 from pymongo import UpdateOne, MongoClient
@@ -79,7 +72,11 @@ def sync_local_to_cloud(local_collection_name: str, cloud_collection_name: str, 
                 ))
 
     if actions:
+        start_time = time.time()
         result = cloud_collection.bulk_write(actions)
+        end_time = time.time()
+        total_time = end_time - start_time
+        print(f"Time taken: {total_time} seconds for {len(actions)} operations")
         print(f"Synced {result.modified_count + result.upserted_count} documents to cloud '{cloud_collection_name}'.")
     else:
         print(f"No updates required for cloud collection '{cloud_collection_name}'.")
@@ -91,7 +88,7 @@ if __name__ == "__main__":
 
     # Edit this with the collections to update
     sync_local_to_cloud(
-        local_collection_name="legislator_profiles",
-        cloud_collection_name="legislator_profiles",
-        key_fields=["spec_hash", "member_id"]
+        local_collection_name="member_votes",
+        cloud_collection_name="member_votes",
+        key_fields=["member_id"]
     )

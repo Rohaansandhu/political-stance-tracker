@@ -126,10 +126,10 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
                         1. Classify the bill into any relevant political categories and subcategories. 
                            Only use the categories/spectrums provided above. Do NOT create new ones.
                            Determine the impact on each relevant category using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
-                           Rate the bill on how conservative/progressive it is within each category. Use a scale of -1 to +1, where:
+                           Rate the bill on how conservative/progressive it is within each category. Use a scale of -1 to 1, where:
                             - -1 = fully aligned with the liberal_view
                             - 0 = neutral or mixed
-                            - +1 = fully aligned with the conservative_view
+                            - 1 = fully aligned with the conservative_view
                         3. If a category is **not relevant**, omit it from the output.
                         4. Analysis of what a YES vote represents politically
                         5. Analysis of what a NO vote represents politically 
