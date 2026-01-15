@@ -61,7 +61,7 @@ def calculate_average_scores(vote_data_dict):
         # Build the result
         results[category] = {
             "score": avg_score,
-            "bills": bill_ids,
+            # "bills": bill_ids, is way too much data to store in a nested list, find a way around it later if needed
             "bill_count": len(bill_ids),
         }
 
@@ -217,7 +217,7 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
         "party": legislator_info.get("party"),
         "state": legislator_info.get("state"),
         "primary_categories": ideology_data["primary_category_classifications"],
-        "subcategories": ideology_data["subcategory_classifications"],
+        # "subcategories": ideology_data["subcategory_classifications"], Again, unncessary data, not used anywhere
         # "detailed_spectrums": ideology_data["spectrum_scores"],
         "vote_count": ideology_data["vote_count"],
     }
