@@ -46,7 +46,18 @@ def generate_histogram_data(profiles: List[Dict], field: str, category: str) -> 
     for i in np.arange(-1.0, 1.0, bin_size):
         bin_start = float(i)
         bin_end = float(i + bin_size)
-        bin_label = f"{bin_start:.1f} to {bin_end:.1f}"
+        
+        # Convert -0.0 to 0.0
+        if bin_start == -0.0:
+            bin_start = 0.0
+        if bin_end == -0.0:
+            bin_end = 0.0
+        
+        # Show single value if start and end round to the same value at 2 decimals
+        if round(bin_start, 2) == round(bin_end, 2):
+            bin_label = f"{bin_start:.2f}"
+        else:
+            bin_label = f"{bin_start:.2f} to {bin_end:.2f}"
 
         bin_data = {"range": bin_label, "D": 0, "R": 0, "I": 0}
 
@@ -175,11 +186,7 @@ def generate_stats(spec_hash: str, current_ids: list) -> List[Dict]:
     print(f"Found {len(profiles)} profiles for {spec_hash}")
 
     # Fields to process
-    fields = [
-        "detailed_spectrums",
-        "main_categories",
-        "primary_categories"
-    ]
+    fields = ["detailed_spectrums", "main_categories", "primary_categories"]
 
     # Extract all categories for each field
     categories_by_field = extract_categories_from_profiles(profiles, fields)
