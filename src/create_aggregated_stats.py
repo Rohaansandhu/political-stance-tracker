@@ -46,13 +46,13 @@ def generate_histogram_data(profiles: List[Dict], field: str, category: str) -> 
     for i in np.arange(-1.0, 1.0, bin_size):
         bin_start = float(i)
         bin_end = float(i + bin_size)
-        
+
         # Convert -0.0 to 0.0
         if bin_start == -0.0:
             bin_start = 0.0
         if bin_end == -0.0:
             bin_end = 0.0
-        
+
         # Show single value if start and end round to the same value at 2 decimals
         if round(bin_start, 2) == round(bin_end, 2):
             bin_label = f"{bin_start:.2f}"
@@ -106,7 +106,7 @@ def generate_scatter_data(profiles: List[Dict], field: str, category: str) -> Di
     """Generate scatter plot data for score vs bill_count."""
 
     # Filter profiles that have this category with valid score and bill_count
-    scatter_data = []
+    legislators = []
     for p in profiles:
         category_data = p.get(field, {}).get(category)
         if (
@@ -115,10 +115,10 @@ def generate_scatter_data(profiles: List[Dict], field: str, category: str) -> Di
             and isinstance(category_data.get("bill_count"), (int, float))
             and category_data.get("bill_count", 0) >= 10
         ):
-            scatter_data.append(
+            legislators.append(
                 {
                     "member_id": p.get("member_id"),
-                    "name": p.get("name"),
+                    "official_full_name": p.get("official_full_name"),
                     "party": p.get("party", "I"),
                     "state": p.get("state"),
                     "score": float(category_data["score"]),
@@ -126,29 +126,31 @@ def generate_scatter_data(profiles: List[Dict], field: str, category: str) -> Di
                 }
             )
 
-    if not scatter_data:
+    if not legislators:
         return None
 
     # Calculate correlation
-    scores = [d["score"] for d in scatter_data]
-    bill_counts = [d["bill_count"] for d in scatter_data]
+    scores = [d["score"] for d in legislators]
+    bill_counts = [d["bill_count"] for d in legislators]
     correlation = calculate_correlation(scores, bill_counts)
 
-    # Group by party
-    by_party = {
-        "D": [d for d in scatter_data if d["party"] == "D"],
-        "R": [d for d in scatter_data if d["party"] == "R"],
-        "I": [d for d in scatter_data if d["party"] == "I"],
+    # Calculate party counts for metadata
+    party_counts = {
+        "D": len([d for d in legislators if d["party"] == "D"]),
+        "R": len([d for d in legislators if d["party"] == "R"]),
+        "I": len([d for d in legislators if d["party"] == "I"]),
     }
 
     return {
         "chart_type": "scatter",
-        "data": scatter_data,
-        "by_party": by_party,
-        "correlation": float(correlation),
-        "total_count": len(scatter_data),
-        "score_range": [float(min(scores)), float(max(scores))],
-        "bill_count_range": [int(min(bill_counts)), int(max(bill_counts))],
+        "legislators": legislators,
+        "metadata": {
+            "correlation": float(correlation),
+            "total_count": len(legislators),
+            "score_range": [float(min(scores)), float(max(scores))],
+            "bill_count_range": [int(min(bill_counts)), int(max(bill_counts))],
+            "party_counts": party_counts,
+        },
     }
 
 
@@ -170,14 +172,33 @@ def extract_categories_from_profiles(
 def generate_stats(spec_hash: str, current_ids: list) -> List[Dict]:
     """Generate all histogram and scatter stats for a spec_hash."""
 
-    # Fetch all profiles for this spec_hash
+    # Fetch all profiles for this spec_hash with official_full_name from legislators
     leg_collection = db_utils.get_collection("legislator_profiles")
-    query = {"spec_hash": spec_hash}
-    # Only do current legislators if current_ids are passed in
-    if current_ids:
-        query.update({"member_id": {"$in": current_ids}})
 
-    profiles = list(leg_collection.find(query))
+    match_stage = {"spec_hash": spec_hash}
+    if current_ids:
+        match_stage["member_id"] = {"$in": current_ids}
+
+    pipeline = [
+        {"$match": match_stage},
+        {
+            "$lookup": {
+                "from": "legislators",
+                "localField": "member_id",
+                "foreignField": "member_id",
+                "as": "legislator_data",
+            }
+        },
+        {"$unwind": {"path": "$legislator_data", "preserveNullAndEmptyArrays": True}},
+        {"$addFields": {"official_full_name": "$legislator_data.name.official_full"}},
+        {
+            "$project": {
+                "legislator_data": 0  
+            }
+        },
+    ]
+
+    profiles = list(leg_collection.aggregate(pipeline))
 
     if not profiles:
         print(f"No profiles found for spec_hash: {spec_hash}")
@@ -299,7 +320,7 @@ def write_stats_to_db(stats: List[Dict]):
     if histogram_actions:
         db_utils.bulk_write("histogram_stats", histogram_actions)
     if scatter_actions:
-        db_utils.bulk_write("scatter", scatter_actions)
+        db_utils.bulk_write("scatter_stats", scatter_actions)
 
     print("Write complete!")
 
