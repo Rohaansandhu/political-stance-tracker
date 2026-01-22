@@ -1,5 +1,3 @@
-# Script to process roll call votes and organize them by member.
-# Can read from data/ directory or MongoDB, and outputs to data/organized_votes or MongoDB.
 import json
 from pathlib import Path
 import argparse
@@ -13,6 +11,52 @@ INPUT_COLLECTION = "rollcall_votes"
 # Output directory for member-organized data
 OUTPUT_DIR = Path("data/organized_votes")
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+
+def get_legislator_id_map():
+    """
+    Builds a mapping of all known IDs (Bioguide, LIS, etc.) to the
+    canonical 'member_id' stored in the legislators collection.
+    This is to handle cases of legislators being both house and senate
+    members at different points in time.
+
+    Returns:
+        dict: { 'B001234': 'S123', 'S123': 'S123', ... }
+    """
+    print("Building legislator ID map...")
+    id_map = {}
+    legislators = db_utils.get_collection("legislators")
+
+    # Fetch only the fields we need to build the map
+    projection = {"member_id": 1, "bioguide": 1, "lis": 1, "id": 1}
+
+    for leg in legislators.find({}, projection):
+        canonical_id = leg.get("member_id")
+        if not canonical_id:
+            continue
+
+        # Map the canonical ID to itself
+        id_map[canonical_id] = canonical_id
+
+        # Map Bioguide ID to canonical ID
+        if bioguide := leg.get("bioguide"):
+            id_map[bioguide] = canonical_id
+
+        # Map LIS ID to canonical ID (senate id takes priority)
+        if lis := leg.get("lis"):
+            id_map[lis] = canonical_id
+
+        # Fallback: check nested 'id' object just in case
+        if "id" in leg:
+            if b_id := leg["id"].get("bioguide"):
+                id_map[b_id] = canonical_id
+            if l_id := leg["id"].get("lis"):
+                id_map[l_id] = canonical_id
+
+    print(
+        f"Mapped {len(id_map)} aliases to {legislators.count_documents({})} legislators."
+    )
+    return id_map
 
 
 def write_member_votes_to_data(member_votes):
@@ -35,7 +79,7 @@ def write_member_votes_to_db(member_votes):
     print(f"Inserted/Updated {count} member vote documents into the database.")
 
 
-def process_vote_record(vote_data, member_votes):
+def process_vote_record(vote_data, member_votes, id_map):
     """Process a single vote record and add to member_votes dict"""
     # Filter out non-bill votes
     if (bill := vote_data.get("bill", {})) == {}:
@@ -52,11 +96,6 @@ def process_vote_record(vote_data, member_votes):
 
     # Extract metadata
     vote_id = vote_data.get("vote_id")
-    chamber = vote_data.get("chamber")
-    date = vote_data.get("date")
-    question = vote_data.get("question")
-    subject = vote_data.get("subject")
-    source_url = vote_data.get("source_url")
 
     # Process each member's vote
     votes = vote_data.get("votes", {})
@@ -66,9 +105,13 @@ def process_vote_record(vote_data, member_votes):
             if member == "VP":
                 continue
 
-            member_id = member.get("id")
-            if not member_id:
+            raw_member_id = member.get("id")
+            if not raw_member_id:
                 continue
+
+            # RESOLVE ID: Use the map to find the canonical member_id
+            # If the ID isn't in our map (shouldn't be possible), fall back to the raw ID.
+            member_id = id_map.get(raw_member_id, raw_member_id)
 
             if member_id not in member_votes:
                 member_votes[member_id] = {
@@ -88,53 +131,19 @@ def process_vote_record(vote_data, member_votes):
             )
 
 
-def process_votes_from_data():
-    raise DeprecationWarning
-    member_votes = {}
-
-    # Example path to roll call data: data/{congress_num}/votes/{year}
-    for congress in CONGRESS_DATA_DIR.iterdir():
-        if not congress.is_dir():
-            continue
-
-        votes_dir = congress / "votes"
-        if not votes_dir.exists():
-            print(f"WARNING: No votes folder in {congress}")
-            continue
-
-        # Iterate through each vote folder by year
-        for year in votes_dir.iterdir():
-            if not year.is_dir():
-                continue
-
-            # Iterate through all roll call vote folders in year
-            for folder in year.iterdir():
-                if not folder.is_dir():
-                    print(f"ERROR: Not a directory: {folder.name}")
-                    continue
-
-                data_file = folder / "data.json"
-                if not data_file.exists():
-                    print(f"ERROR: Couldn't find data.json for {folder.name}")
-                    continue
-
-                with open(data_file, "r") as f:
-                    vote_data = json.load(f)
-
-                process_vote_record(vote_data, member_votes)
-
-    return member_votes
-
-
 def process_votes_from_db():
     """Process rollcall votes from MongoDB"""
     member_votes = {}
+
+    # Get the ID map first from legislators collection
+    id_map = get_legislator_id_map()
+
     rollcall_votes = db_utils.get_collection(INPUT_COLLECTION)
     print(f"Found {rollcall_votes.count_documents({})} rollcall votes in the database")
 
     rollcall_votes = rollcall_votes.find()
     for vote_data in rollcall_votes:
-        process_vote_record(vote_data, member_votes)
+        process_vote_record(vote_data, member_votes, id_map)
 
     return member_votes
 
