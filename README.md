@@ -3,7 +3,7 @@ Analyzes voting records to show where US Congress Members stand on major politic
 
 If you're curious about the role of LLMs in legislation summaries and possible political analysis, I'd highly recommend checking out this paper from 2024 [political-llm.org](https://political-llm.org/). Another great research piece was produced last May, discussing an LLM-driven framework for scaling Japanese parliamentary members using their political speeches [KOKKAI DOC](https://arxiv.org/pdf/2505.07118).
 
-## Website Is Up! [Political Stance Tracker Website](https://political-stance-website-frontend.vercel.app/)
+## Website Is Up! [Political Stance Tracker Website](https://www.uspolitrack.org)
 A website with my initial findings and results are up. However there's still:
 - More UI improvements to come.
 - New features on the way.
