@@ -298,9 +298,9 @@ def process_all_legislators(bill_analyses, model, spec_hash, schema=None, chambe
 
     profiles = []
     # Get collection
-    member_votes_col = db_utils.get_collection("member_votes")
+    members_with_votes_col = db_utils.get_collection("members_with_votes")
 
-    for legislator_data in member_votes_col.find():
+    for legislator_data in members_with_votes_col.find():
         # Senator's member_id looks like SXXX (Ex: S313), House uses bioguide which has 7 chars
         if chamber == "house":
             if len(legislator_data["member_id"]) <= 4:
@@ -309,7 +309,8 @@ def process_all_legislators(bill_analyses, model, spec_hash, schema=None, chambe
             if len(legislator_data["member_id"]) > 4:
                 continue
         legislator_info = build_legislator_info(legislator_data)
-        legislator_votes = legislator_data.get("votes", [])
+        # get legislator votes from member_votes collection
+        legislator_votes = db_utils.get_collection("member_votes").find({"member_id": legislator_data["member_id"]})
 
         profile = create_legislator_profile(
             legislator_info, legislator_votes, bill_analyses

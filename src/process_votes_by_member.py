@@ -1,16 +1,11 @@
 import json
 from pathlib import Path
-import argparse
+import time
+
+from pymongo import UpdateOne
 import db.db_utils as db_utils
 
-
-# Path to the data directory
-CONGRESS_DATA_DIR = Path("data")
 INPUT_COLLECTION = "rollcall_votes"
-
-# Output directory for member-organized data
-OUTPUT_DIR = Path("data/organized_votes")
-OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 def get_legislator_id_map():
@@ -59,27 +54,17 @@ def get_legislator_id_map():
     return id_map
 
 
-def write_member_votes_to_data(member_votes):
-    """Write member votes to data/organized_votes as {member_id}.json files"""
-    for member_id, data in member_votes.items():
-        out_file = OUTPUT_DIR / f"{member_id}.json"
-        with open(out_file, "w") as f:
-            json.dump(data, f, indent=2)
-
-    print(f"Created {len(member_votes)} member JSON files in {OUTPUT_DIR}")
-
-
 def write_member_votes_to_db(member_votes):
     """Write member votes to MongoDB 'member_votes' collection"""
     count = 0
     for data in member_votes.values():
-        db_utils.update_one("member_votes", data, "member_id")
+        db_utils.update_one("members_with_votes", data, "member_id")
         count += 1
 
     print(f"Inserted/Updated {count} member vote documents into the database.")
 
 
-def process_vote_record(vote_data, member_votes, id_map):
+def process_vote_record(vote_data, member_votes, id_map, bulk_actions):
     """Process a single vote record and add to member_votes dict"""
     # Filter out non-bill votes
     if (bill := vote_data.get("bill", {})) == {}:
@@ -119,21 +104,30 @@ def process_vote_record(vote_data, member_votes, id_map):
                     "name": member.get("display_name"),
                     "party": member.get("party"),
                     "state": member.get("state"),
-                    "votes": [],
                 }
 
-            member_votes[member_id]["votes"].append(
-                {
-                    "vote_id": vote_id,
-                    "bill": bill,
-                    "vote": pos,
-                }
+            # Add this vote to the member_votes collection
+            # member_votes collection contains documents for every legislator's individual vote
+            vote_obj = {
+                "vote_id": vote_id,
+                "bill": bill,
+                "vote": pos,
+                "member_id": member_id,
+            }
+
+            bulk_actions.append(
+                UpdateOne(
+                    {"vote_id": vote_id, "member_id": member_id}, 
+                    {"$set": vote_obj}, 
+                    upsert=True, 
+                )
             )
 
 
 def process_votes_from_db():
     """Process rollcall votes from MongoDB"""
     member_votes = {}
+    bulk_actions = []
 
     # Get the ID map first from legislators collection
     id_map = get_legislator_id_map()
@@ -143,24 +137,22 @@ def process_votes_from_db():
 
     rollcall_votes = rollcall_votes.find()
     for vote_data in rollcall_votes:
-        process_vote_record(vote_data, member_votes, id_map)
+        process_vote_record(vote_data, member_votes, id_map, bulk_actions)
+    
+    # Perform the bulk write for member_votes
+    if bulk_actions:
+        print(f"Executing {len(bulk_actions)} bulk updates...")
+        start_time = time.time()
+        db_utils.bulk_write("member_votes", bulk_actions, ordered=False)
+        end_time = time.time()
+        total_time = end_time - start_time
+        print(f"Time taken: {total_time} seconds for {len(bulk_actions)} operations")
 
     return member_votes
 
 
 if __name__ == "__main__":
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument(
-        "--writeData",
-        action="store_true",
-        help="If specified, stores organized member votes to data",
-    )
-
-    args = argparser.parse_args()
 
     vote_data = process_votes_from_db()
 
-    # Only write to data/ if specified
-    if args.writeData:
-        write_member_votes_to_data(vote_data)
     write_member_votes_to_db(vote_data)

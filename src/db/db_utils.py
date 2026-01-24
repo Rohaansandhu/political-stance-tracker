@@ -34,7 +34,6 @@ def ensure_indexes():
         ],
         unique=True,
     )
-    db.member_votes.create_index([("member_id", ASCENDING)], unique=True)
     db.rollcall_votes.create_index([("vote_id", ASCENDING)], unique=True)
 
 
@@ -70,10 +69,10 @@ def get_collection(collection_name: str):
     return db[collection_name]
 
 
-def bulk_write(collection: str, actions: list):
+def bulk_write(collection: str, actions: list, ordered=True):
     """Bulk write `actions` into `collection` in order of `actions`"""
     db = get_db()
-    return db[collection].bulk_write(actions)
+    return db[collection].bulk_write(actions, ordered=ordered)
 
 
 # Use utils as a script to ensure indexes in database (only needs to be run once)

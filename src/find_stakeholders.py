@@ -13,9 +13,9 @@ from calc_member_ideology import (
 def find_stakeholders(bill_analyses, chamber, spec_hash):
     legislator_stakeholders = []
 
-    member_votes_col = db_utils.get_collection("member_votes")
+    members_with_votes_col = db_utils.get_collection("members_with_votes")
 
-    for legislator_data in member_votes_col.find():
+    for legislator_data in members_with_votes_col.find():
         # Senator's member_id looks like SXXX (Ex: S313), House uses bioguide which has 7 chars
         if chamber == "house":
             if len(legislator_data["member_id"]) <= 4:
@@ -26,7 +26,9 @@ def find_stakeholders(bill_analyses, chamber, spec_hash):
 
         stakeholder_freq = {}
 
-        for vote in legislator_data["votes"]:
+        member_votes = db_utils.get_collection("member_votes")
+
+        for vote in member_votes.find({"member_id": legislator_data["member_id"]}):
 
             bill_id = build_bill_id(vote["bill"])
 

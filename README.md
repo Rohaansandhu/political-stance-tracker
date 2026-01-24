@@ -96,7 +96,7 @@ python3 src/process_votes_by_member.py [--writeData]
 Options:
 - `--writeData`: If specified will also store to the data/ folder
 
-Output: MongoDB 'member_votes' collection.
+Output: MongoDB 'members_with_votes' and 'member_votes' collections.
 
 ### 2. Get Voted Bills
 Fetches bill status for all bills that have been voted on and marks them accordingly. Also generates `data.json` files for bill XML data. Automatically uploads bill data to MongoDB.

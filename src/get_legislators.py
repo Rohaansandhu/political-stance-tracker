@@ -67,9 +67,9 @@ def add_legislators_to_db():
         historical_data = json.load(f)
 
     # Get member_votes collection
-    member_votes = db_utils.get_collection("member_votes")
+    members_with_votes = db_utils.get_collection("members_with_votes")
     members = set()
-    for member in member_votes.find():
+    for member in members_with_votes.find():
         members.add(member["member_id"])
 
     # Add current tag to legislators who are current
