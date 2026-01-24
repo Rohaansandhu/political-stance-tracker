@@ -117,9 +117,9 @@ def process_vote_record(vote_data, member_votes, id_map, bulk_actions):
 
             bulk_actions.append(
                 UpdateOne(
-                    {"vote_id": vote_id, "member_id": member_id}, 
-                    {"$set": vote_obj}, 
-                    upsert=True, 
+                    {"vote_id": vote_id, "member_id": member_id},
+                    {"$set": vote_obj, "$currentDate": {"last_modified": True}},
+                    upsert=True,
                 )
             )
 
@@ -138,7 +138,7 @@ def process_votes_from_db():
     rollcall_votes = rollcall_votes.find()
     for vote_data in rollcall_votes:
         process_vote_record(vote_data, member_votes, id_map, bulk_actions)
-    
+
     # Perform the bulk write for member_votes
     if bulk_actions:
         print(f"Executing {len(bulk_actions)} bulk updates...")

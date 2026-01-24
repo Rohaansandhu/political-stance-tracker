@@ -152,24 +152,6 @@ Options:
 ## Data Output
 All outputs are stored in MongoDB or the generated `data/` folder.
 
-## Current State
-This project is actively under development. Here's a quick summary of recent improvements:
-- Improved category validation for bill analyses with prompting
-- Added a Cloud DB updater script
-- Excluded partisan scores of 0
-  - If included, leads to longer serving senators/reps appearing more moderate, just due to bipartisan bills that go through
-- Rigid Schema for Bill Analyses, added validation of JSON fields
-- Added initial script for finding key_stakeholders of each legislator
-- Split up aggregated stats into 2 collections
-- Added bulk_write operations
-- Schema Update to v3
-  - Added legislative subjects from bill data for consideration
-  - Deleted political spectrums
-    - Moved spectrums in categories, LLMs would get confused sometimes and place categories in spectrums and vice versa
-  - Refined political categories
-    - Only primary categories and subcategories now, secondary categories just confused the LLM
-  - Slight text prompt adjustments
-
 If you have suggestions or want to contribute, feel free to open an issue or pull request!
 
 ## Acknowledgments
