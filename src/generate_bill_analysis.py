@@ -41,7 +41,7 @@ def check_requirements(bill_id, bill_analyses_coll):
     return True
 
 
-def generate_bill_analyses(force=False, num_of_bills=None):
+def generate_bill_analyses(force=False, num_of_bills=None, delay=0.0):
     generated_ids = set()
     start_time = time.perf_counter()
 
@@ -79,7 +79,9 @@ def generate_bill_analyses(force=False, num_of_bills=None):
         top_subject = bill_data.get("subjects_top_term")
 
         # Call LLM Client
-        bill_analysis = bill_analysis_client.analyze_bill(summary_text, legislative_subjects, top_subject, MODEL)
+        bill_analysis = bill_analysis_client.analyze_bill(
+            summary_text, legislative_subjects, top_subject, MODEL
+        )
 
         # Add bill_id
         bill_analysis["bill_id"] = bill_id
@@ -110,6 +112,11 @@ def generate_bill_analyses(force=False, num_of_bills=None):
         generated_ids.add(bill_id)
         print(f"{bill_id} bill analysis generated")
 
+        # Add delay (if specified)
+        if delay > 0:
+            print(f"Sleeping for {delay} seconds...")
+            time.sleep(delay)
+
         # Stop if we've reached the specified number of bills
         if num_of_bills is not None and len(generated_ids) >= num_of_bills:
             print(f"Reached specified number of bills: {num_of_bills}")
@@ -128,7 +135,13 @@ if __name__ == "__main__":
         type=int,
         help="Number of bills to process, since this can be time consuming",
     )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=0.0,
+        help="Delay in seconds between bill analysis requests (default: 0)",
+    )
     args = parser.parse_args()
 
-    generated_bills = generate_bill_analyses(args.force, args.numOfBills)
+    generated_bills = generate_bill_analyses(args.force, args.numOfBills, args.delay)
     print(f"Total bill analyses generated: {len(generated_bills)}")
