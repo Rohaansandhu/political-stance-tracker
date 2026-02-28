@@ -12,7 +12,7 @@ load_dotenv()
 
 # Determine which client to use (Specify with env variable)
 # Currently supported clients: openrouter or gemini or cerebras
-CLIENT = os.getenv("CLIENT", "openrouter")
+CLIENT = os.getenv("CLIENT")
 
 # Initialize client once when module is imported
 if CLIENT == "openrouter":
@@ -29,6 +29,10 @@ elif CLIENT == "cerebras":
     client = OpenAI(
         base_url="https://api.cerebras.ai/v1",
         api_key=os.environ.get("CEREBRAS_API_KEY"),
+    )
+elif CLIENT == "openai":
+    client = OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY"),
     )
 
 # Update Schema after every change to prompts/categories/spectrums
@@ -235,7 +239,7 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
             completion = client.chat.completions.create(
                 extra_body={},
                 model=model,
-                temperature=0,
+                # temperature=0, gpt-5-mini is deterministic by default, so it doesn't accept temperature
                 messages=[
                     {
                         "role": "system",
