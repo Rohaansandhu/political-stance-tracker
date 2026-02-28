@@ -310,7 +310,9 @@ def process_all_legislators(bill_analyses, model, spec_hash, schema=None, chambe
                 continue
         legislator_info = build_legislator_info(legislator_data)
         # get legislator votes from member_votes collection
-        legislator_votes = db_utils.get_collection("member_votes").find({"member_id": legislator_data["member_id"]})
+        legislator_votes = db_utils.get_collection("member_votes").find(
+            {"member_id": legislator_data["member_id"]}
+        )
 
         profile = create_legislator_profile(
             legislator_info, legislator_votes, bill_analyses
@@ -610,12 +612,6 @@ def write_profiles_to_json(profiles):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    # Deprecated
-    parser.add_argument(
-        "--data",
-        action="store_true",
-        help="Store to data/ instead of MongoDB",
-    )
     # REQUIRED ARGUMENT
     parser.add_argument(
         "--model",
@@ -667,10 +663,7 @@ if __name__ == "__main__":
         profiles = generate_rankings(profiles)
 
         # Write profiles
-        if args.data:
-            write_profiles_to_json(profiles)
-        else:
-            write_profiles_to_db(profiles)
+        write_profiles_to_db(profiles)
     else:
         print(
             f"No analyses were found for model: {args.model} with schema version: {args.schema if args.schema else 'latest'}"
