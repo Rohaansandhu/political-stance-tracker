@@ -32,7 +32,7 @@ elif CLIENT == "cerebras":
     )
 
 # Update Schema after every change to prompts/categories/spectrums
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SYSTEM_PROMPT = """
 You are an expert political analyst specializing in legislative classification. 
