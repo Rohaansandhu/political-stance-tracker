@@ -436,6 +436,81 @@ def load_bill_analyses_from_db(
     return bill_analyses
 
 
+def apply_bayesian_weighting(profiles):
+    """
+    Applies Bayesian weighting to legislator scores using their party's average as the prior.
+    m is determined empirically per category based on the distribution of bill counts.
+    """
+    # Collect all counts and raw data for prior calculation
+    category_counts = defaultdict(list)
+    party_totals = defaultdict(lambda: defaultdict(lambda: {"sum": 0, "count": 0}))
+
+    # We use a threshold to ensure our "Party Average" (the Prior) is built from
+    # legislators who actually have enough data to be representative
+    MINIMUM_VOTE_FOR_PRIOR = 10
+
+    for profile in profiles:
+        party = profile.get("party")
+        categories = profile.get("primary_categories", {})
+
+        for cat_name, cat_data in categories.items():
+            count = cat_data.get("bill_count", 0)
+            if count > 0:
+                category_counts[cat_name].append(count)
+
+            # Build party totals for the prior (C)
+            if party in ["D", "R"] and count > MINIMUM_VOTE_FOR_PRIOR:
+                party_totals[party][cat_name]["sum"] += cat_data["score"] * count
+                party_totals[party][cat_name]["count"] += count
+
+    # Compute the empirical 'm' per category (25th percentile)
+    m_per_category = {}
+    for cat_name, counts in category_counts.items():
+        if counts:
+            # We use the 25th percentile. If a category is sparse, m will be low.
+            # If a category is dense, m will be higher to ensure stability.
+            m_per_category[cat_name] = max(5, pd.Series(counts).quantile(0.25))
+        else:
+            m_per_category[cat_name] = 10  # Fallback
+
+    # 3. Compute the party means (C)
+    party_means = {}
+    for party, cats in party_totals.items():
+        party_means[party] = {}
+        for cat_name, stats in cats.items():
+            if stats["count"] > 0:
+                party_means[party][cat_name] = stats["sum"] / stats["count"]
+            else:
+                party_means[party][cat_name] = 0
+
+    # 4. Apply the Bayesian Formula
+    for profile in profiles:
+        party = profile.get("party")
+
+        for cat_name, cat_data in profile.get("primary_categories", {}).items():
+            v = cat_data.get("bill_count", 0)
+            R = cat_data.get("score", 0)
+            m = m_per_category.get(cat_name, 10)
+
+            # Get the prior (C)
+            if party in party_means and cat_name in party_means[party]:
+                C = party_means[party][cat_name]
+            else:
+                # Fallback to absolute center (0) for Independents/others
+                C = 0
+
+            # Bayesian Calculation: W = (v*R + m*C) / (v + m)
+            weighted_score = (v / (v + m)) * R + (m / (v + m)) * C
+
+            # Store data
+            cat_data["raw_score"] = R
+            cat_data["score"] = round(weighted_score, 3)
+            cat_data["party_prior"] = round(C, 3)
+            cat_data["empirical_m"] = round(m, 1)
+
+    return profiles
+
+
 def generate_rankings(profiles):
     """Generate rankings for each category/spectrum across all profiles."""
     all_rows = []
@@ -460,10 +535,6 @@ def generate_rankings(profiles):
             data = profile.get(field, {})
 
             for category, details in data.items():
-
-                # Don't include if bill count is too low (not enough data yet)
-                if details.get("bill_count", 0) <= 10:
-                    continue
 
                 all_rows.append(
                     {
@@ -658,6 +729,9 @@ if __name__ == "__main__":
         profiles = process_all_legislators(
             bill_analyses, args.model, spec_hash, args.schema, args.chamber
         )
+
+        # Apply Bayesian weighting
+        profiles = apply_bayesian_weighting(profiles)
 
         # Create rankings for each category/spectrum
         profiles = generate_rankings(profiles)
