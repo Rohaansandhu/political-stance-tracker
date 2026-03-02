@@ -3,8 +3,15 @@ import argparse
 from analysis.bill_analysis_client import SCHEMA_VERSION
 import db.db_utils as db_utils
 
-# Models I don't want running, this whole file is really just for me. 
-bannedModels = {"openrouter/sherlock-think-alpha","llama-4-scout-17b-16e-instruct", "deepseek/deepseek-chat-v3.1:free", "openai/gpt-oss-20b:free", "x-ai/grok-4-fast:free"}
+# Models I don't want running, this whole file is really just for me.
+bannedModels = {
+    "openrouter/sherlock-think-alpha",
+    "llama-4-scout-17b-16e-instruct",
+    "deepseek/deepseek-chat-v3.1:free",
+    "openai/gpt-oss-20b:free",
+    "x-ai/grok-4-fast:free",
+}
+
 
 def get_available_filters(collection):
     """Query MongoDB to find all available values for congress, chamber, and model."""
@@ -15,7 +22,9 @@ def get_available_filters(collection):
     models = set()
 
     # Use latest schema version by default
-    for doc in collection.find({"schema_version": SCHEMA_VERSION}, {"congress": 1, "chamber": 1, "model": 1}):
+    for doc in collection.find(
+        {"schema_version": SCHEMA_VERSION}, {"congress": 1, "chamber": 1, "model": 1}
+    ):
         if "congress" in doc:
             congresses.add(doc["congress"])
         if "chamber" in doc:
@@ -43,7 +52,7 @@ def generate_combinations(congresses, chambers):
     # for c in congresses:
     #     yield {"--congress": str(c)}
     for ch in chambers:
-            yield {"--chamber": ch}
+        yield {"--chamber": ch}
 
     # Combine all two-way combinations
     # for c in congresses:

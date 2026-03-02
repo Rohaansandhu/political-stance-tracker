@@ -66,6 +66,7 @@ def load_political_frameworks():
 
     return categories, reduced_categories
 
+
 # TODO: Split up this function, clean more of the processing logic
 def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retries=4):
     """
@@ -272,9 +273,13 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
                     bad_categories = []
                     continue
                 # Check if category names match the categories supplied, reprompt if we can't validate
-                analysis_result, bad_category, bad_categories = validate_names(analysis_result, categories)
+                analysis_result, bad_category, bad_categories = validate_names(
+                    analysis_result, categories
+                )
                 if bad_category:
-                    print(f"Bad categories were found in primary categories: {', '.join(bad_categories)}... Retrying")
+                    print(
+                        f"Bad categories were found in primary categories: {', '.join(bad_categories)}... Retrying"
+                    )
                     continue
 
                 if attempt > 0:
