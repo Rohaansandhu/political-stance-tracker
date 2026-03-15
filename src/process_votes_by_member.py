@@ -81,6 +81,7 @@ def process_vote_record(vote_data, member_votes, id_map, bulk_actions):
 
     # Extract metadata
     vote_id = vote_data.get("vote_id")
+    vote_date = vote_data.get("date")
 
     # Process each member's vote
     votes = vote_data.get("votes", {})
@@ -113,6 +114,7 @@ def process_vote_record(vote_data, member_votes, id_map, bulk_actions):
                 "bill": bill,
                 "vote": pos,
                 "member_id": member_id,
+                "date": vote_date,
             }
 
             bulk_actions.append(

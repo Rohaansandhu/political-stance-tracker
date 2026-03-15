@@ -109,26 +109,6 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
         if vote_value == 0:
             continue
 
-        # Process spectrums
-        # for spectrum_name, spectrum_data in bill_analysis.get(
-        #     "political_spectrums", {}
-        # ).items():
-        #     partisan_score = spectrum_data.get("partisan_score", 0)
-        #     impact_score = spectrum_data.get("impact_score", 0)
-
-        #     if partisan_score != 0:
-        #         spectrum_votes[spectrum_name].append(
-        #             {
-        #                 "bill_id": bill_id,
-        #                 "vote": vote,
-        #                 "vote_value": vote_value,
-        #                 "key_provisions": key_provisions,
-        #                 "partisan_score": partisan_score,
-        #                 "impact_score": impact_score,
-        #                 "weighted_score": partisan_score * impact_score * vote_value,
-        #             }
-        #         )
-
         # Process categories
         political_categories = bill_analysis.get("political_categories", {})
 
