@@ -33,36 +33,74 @@ def build_bill_id(bill: dict) -> str:
     return "%s%s-%s" % (btype, number, congress)
 
 
-def calculate_average_scores(vote_data_dict):
+def extract_top_bills(votes, n=3):
     """
-    Helper to calculate average weighted scores from vote data.
-    Returns a dictionary in the format:
-    {
-        "Category Name": {
-            "score": float,
-            "bills": [list of unique bill_ids],
-            "bill_count": int
-        },
-        ...
+    Return the top N conservative and top N liberal bills for a category,
+    ranked by effective_score (partisan_score * vote_value, unweighted by impact).
+    Strips internal-only fields before storing.
+    """
+    sorted_votes = sorted(votes, key=lambda v: v["effective_score"])
+
+    def clean(vote):
+        return {
+            "bill_id": vote["bill_id"],
+            "vote": vote["vote"],
+            "date": vote["date"],
+            "effective_score": round(vote["effective_score"], 3),
+        }
+
+    return {
+        "conservative": [clean(v) for v in sorted_votes[-n:][::-1]],
+        "liberal": [clean(v) for v in sorted_votes[:n]],
     }
+
+
+def extract_recent_votes(all_votes_with_category, n=5, threshold=0.3):
     """
+    From a flat list of all votes across all categories (each with a 'category' key),
+    return the N most recent conservative and N most recent liberal votes overall.
+    Threshold filters out low-signal near-neutral votes.
+    """
+    conservative = sorted(
+        [v for v in all_votes_with_category if v["effective_score"] > threshold],
+        key=lambda v: v.get("date", ""),
+        reverse=True,
+    )[:n]
+
+    liberal = sorted(
+        [v for v in all_votes_with_category if v["effective_score"] < -threshold],
+        key=lambda v: v.get("date", ""),
+        reverse=True,
+    )[:n]
+
+    def clean(vote):
+        return {
+            "bill_id": vote["bill_id"],
+            "vote": vote["vote"],
+            "date": vote["date"],
+            "effective_score": round(vote["effective_score"], 3),
+            "category": vote["category"],
+        }
+
+    return {
+        "conservative": [clean(v) for v in conservative],
+        "liberal": [clean(v) for v in liberal],
+    }
+
+
+def calculate_average_scores(vote_data_dict):
+    """ "Helper function to calculate average scores for each category given a dict of votes per category."""
     results = {}
 
     for category, votes in vote_data_dict.items():
         if not votes:
             continue
 
-        # Compute the average weighted score
         avg_score = round(sum(v["weighted_score"] for v in votes) / len(votes), 3)
 
-        # Collect bill IDs
-        bill_ids = [v["bill_id"] for v in votes]
-
-        # Build the result
         results[category] = {
             "score": avg_score,
-            # "bills": bill_ids, is way too much data to store in a nested list, find a way around it later if needed
-            "bill_count": len(bill_ids),
+            "bill_count": len(votes),
         }
 
     return results
@@ -80,57 +118,49 @@ def check_inputs(model, schema, congress, chamber, bill_type):
 
 
 def calculate_legislator_ideology(legislator_votes, bill_analyses):
-    """
-    Calculate ideology scores for a legislator based on their voting pattern.
-    """
-
-    # Store raw voting data for each spectrum/category
-    # spectrum_votes = defaultdict(list)
     primary_category_votes = defaultdict(list)
     subcategory_votes = defaultdict(list)
 
-    # Determined by the number of bills analyzed
     vote_count = 0
     for vote_record in legislator_votes:
         bill_id = build_bill_id(vote_record.get("bill", {}))
         if bill_id == "":
             continue
         vote = vote_record.get("vote", "").strip()
+        date = vote_record.get("date", "")
 
-        # Skip if no analysis available for this bill
         if bill_id not in bill_analyses:
             continue
 
         bill_analysis = bill_analyses[bill_id]
 
-        # Determine vote direction (1 for support, -1 for oppose)
         vote_value = get_vote_value(vote)
-        # If they didn't vote, move on
         if vote_value == 0:
             continue
 
-        # Process categories
         political_categories = bill_analysis.get("political_categories", {})
 
         # Primary categories
-        primary_categories = political_categories.get("primary_categories", [])
-        for primary_category in primary_categories:
+        for primary_category in political_categories.get("primary_categories", []):
             if isinstance(primary_category, dict) and primary_category.get("name"):
                 category_name = primary_category.get("name", "")
                 partisan_score = primary_category.get("partisan_score", 0)
                 impact_score = primary_category.get("impact_score", 0)
                 weighted_score = partisan_score * impact_score * vote_value
+                effective_score = partisan_score * vote_value
 
-                # Ignore bills that have no partisan relevance
                 if partisan_score != 0:
-                    vote_data = {
-                        "bill_id": bill_id,
-                        "weighted_score": weighted_score,
-                    }
+                    primary_category_votes[category_name].append(
+                        {
+                            "bill_id": bill_id,
+                            "weighted_score": weighted_score,
+                            "effective_score": effective_score,
+                            "vote": vote,
+                            "date": date,
+                        }
+                    )
 
-                    primary_category_votes[category_name].append(vote_data)
-
-        # Subcategories
+        # Subcategories — no effective_score needed here
         for subcategory in political_categories.get("subcategories", []):
             if isinstance(subcategory, dict) and subcategory.get("name"):
                 category_name = subcategory.get("name", "")
@@ -145,15 +175,33 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
                             "weighted_score": weighted_score,
                         }
                     )
+
         vote_count += 1
 
+    # Build primary category results with top_bills injected per category
+    primary_category_results = calculate_average_scores(primary_category_votes)
+    for category, votes in primary_category_votes.items():
+        if category in primary_category_results:
+            primary_category_results[category]["top_bills"] = extract_top_bills(votes)
+
+    # Flatten and deduplicate for overall recent votes
+    all_votes_flat = [
+        {**vote, "category": category}
+        for category, votes in primary_category_votes.items()
+        for vote in votes
+    ]
+    seen_bill_ids = set()
+    all_votes_deduped = []
+    for vote in sorted(all_votes_flat, key=lambda v: v.get("date", ""), reverse=True):
+        if vote["bill_id"] not in seen_bill_ids:
+            seen_bill_ids.add(vote["bill_id"])
+            all_votes_deduped.append(vote)
+
     return {
-        # "spectrum_scores": calculate_average_scores(spectrum_votes),
-        "primary_category_classifications": calculate_average_scores(
-            primary_category_votes
-        ),
+        "primary_category_classifications": primary_category_results,
         "subcategory_classifications": calculate_average_scores(subcategory_votes),
         "vote_count": vote_count,
+        "recent_votes": extract_recent_votes(all_votes_deduped),
     }
 
 
@@ -185,11 +233,7 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
     Returns:
         dict: Complete legislator profile with ideology scores
     """
-
     ideology_data = calculate_legislator_ideology(legislator_votes, bill_analyses)
-
-    # Create standardized spectrum scores (map to common left-right, authoritarian-libertarian)
-    # standard_scores = standardize_spectrum_scores(ideology_data["spectrum_scores"])
 
     profile = {
         "member_id": legislator_info.get("member_id"),
@@ -197,9 +241,8 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
         "party": legislator_info.get("party"),
         "state": legislator_info.get("state"),
         "primary_categories": ideology_data["primary_category_classifications"],
-        # "subcategories": ideology_data["subcategory_classifications"], Again, unncessary data, not used anywhere
-        # "detailed_spectrums": ideology_data["spectrum_scores"],
         "vote_count": ideology_data["vote_count"],
+        "recent_votes": ideology_data["recent_votes"],
     }
 
     return profile
@@ -643,21 +686,6 @@ def write_profiles_to_db(profiles):
 
     if actions:
         db_utils.bulk_write(OUTPUT_COLLECTION, actions)
-    print(f"Updated profile for {count} members")
-
-
-def write_profiles_to_json(profiles):
-    """Write legislator profiles to JSON files in data/legislator_profiles."""
-    raise DeprecationWarning
-    count = 0
-    for profile in profiles:
-        output_file = OUTPUT_DIR / f"{profile['member_id']}.json"
-        try:
-            with open(output_file, "w") as f:
-                json.dump(profile, f, indent=2)
-            count += 1
-        except Exception as e:
-            print(f"Failed to write profile for {profile['name']} to file: {e}")
     print(f"Updated profile for {count} members")
 
 
