@@ -33,42 +33,49 @@ def build_bill_id(bill: dict) -> str:
     return "%s%s-%s" % (btype, number, congress)
 
 
-def extract_top_bills(votes, n=3):
+def extract_top_votes(votes, n=3):
     """
-    Return the top N conservative and top N liberal bills for a category,
-    ranked by effective_score (partisan_score * vote_value, unweighted by impact).
-    Strips internal-only fields before storing.
+    Return the top N conservative and top N liberal actions for a category,
+    ranked strictly by their weighted impact on the legislator's final score.
     """
-    sorted_votes = sorted(votes, key=lambda v: v["effective_score"])
+    # Sort strictly by weighted_score (Most negative to most positive)
+    sorted_votes = sorted(votes, key=lambda v: v["weighted_score"])
 
     def clean(vote):
         return {
             "bill_id": vote["bill_id"],
             "vote": vote["vote"],
             "date": vote["date"],
-            "effective_score": round(vote["effective_score"], 3),
+            "score_impact": round(vote["weighted_score"], 3), 
         }
 
+    # Filter out 0-impact or opposite-impact votes before slicing.
+    # This prevents a moderately liberal vote from being labeled "Most Conservative" 
+    # just because a member has literally zero conservative votes.
+    conservative_actions = [v for v in sorted_votes if v["weighted_score"] > 0]
+    liberal_actions = [v for v in sorted_votes if v["weighted_score"] < 0]
+
     return {
-        "conservative": [clean(v) for v in sorted_votes[-n:][::-1]],
-        "liberal": [clean(v) for v in sorted_votes[:n]],
+        # Grab the highest positive scores (end of the list, reversed)
+        "conservative": [clean(v) for v in conservative_actions[-n:][::-1]],
+        # Grab the lowest negative scores (start of the list)
+        "liberal": [clean(v) for v in liberal_actions[:n]],
     }
 
 
-def extract_recent_votes(all_votes_with_category, n=5, threshold=0.3):
+def extract_recent_votes(all_votes_with_category, n=5, threshold=0.1):
     """
-    From a flat list of all votes across all categories (each with a 'category' key),
-    return the N most recent conservative and N most recent liberal votes overall.
-    Threshold filters out low-signal near-neutral votes.
+    Return the N most recent high-impact votes overall.
+    Threshold uses weighted_score, so it filters out low-impact or highly-bipartisan votes.
     """
     conservative = sorted(
-        [v for v in all_votes_with_category if v["effective_score"] > threshold],
+        [v for v in all_votes_with_category if v["weighted_score"] > threshold],
         key=lambda v: v.get("date", ""),
         reverse=True,
     )[:n]
 
     liberal = sorted(
-        [v for v in all_votes_with_category if v["effective_score"] < -threshold],
+        [v for v in all_votes_with_category if v["weighted_score"] < -threshold],
         key=lambda v: v.get("date", ""),
         reverse=True,
     )[:n]
@@ -78,7 +85,7 @@ def extract_recent_votes(all_votes_with_category, n=5, threshold=0.3):
             "bill_id": vote["bill_id"],
             "vote": vote["vote"],
             "date": vote["date"],
-            "effective_score": round(vote["effective_score"], 3),
+            "score_impact": round(vote["weighted_score"], 3),
             "category": vote["category"],
         }
 
@@ -147,20 +154,18 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
                 partisan_score = primary_category.get("partisan_score", 0)
                 impact_score = primary_category.get("impact_score", 0)
                 weighted_score = partisan_score * impact_score * vote_value
-                effective_score = partisan_score * vote_value
 
                 if partisan_score != 0:
                     primary_category_votes[category_name].append(
                         {
                             "bill_id": bill_id,
                             "weighted_score": weighted_score,
-                            "effective_score": effective_score,
                             "vote": vote,
                             "date": date,
                         }
                     )
 
-        # Subcategories — no effective_score needed here
+        # Subcategories
         for subcategory in political_categories.get("subcategories", []):
             if isinstance(subcategory, dict) and subcategory.get("name"):
                 category_name = subcategory.get("name", "")
@@ -182,7 +187,7 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
     primary_category_results = calculate_average_scores(primary_category_votes)
     for category, votes in primary_category_votes.items():
         if category in primary_category_results:
-            primary_category_results[category]["top_bills"] = extract_top_bills(votes)
+            primary_category_results[category]["top_bills"] = extract_top_votes(votes)
 
     # Flatten and deduplicate for overall recent votes
     all_votes_flat = [
