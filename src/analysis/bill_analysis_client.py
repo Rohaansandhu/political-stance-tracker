@@ -34,6 +34,11 @@ elif CLIENT == "openai":
     client = OpenAI(
         api_key=os.getenv("OPENAI_API_KEY"),
     )
+else:
+    raise ValueError(
+        f"Unsupported or missing CLIENT env variable: {CLIENT!r}. "
+        "Set CLIENT to one of: openrouter, gemini, cerebras, openai."
+    )
 
 # Update Schema after every change to prompts/categories/spectrums
 SCHEMA_VERSION = 4
@@ -309,7 +314,7 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
                     use_reduced = True
                     continue
             # Check if it's a retryable error (JSON or None output)
-            if "JSON" in str(e) or "Nonetype" in str(e) and attempt < max_retries:
+            if ("JSON" in str(e) or "NoneType" in str(e)) and attempt < max_retries:
                 print(
                     f"API call failed on attempt {attempt + 1}, retrying... Error: {e}"
                 )
@@ -413,12 +418,15 @@ def validate_names(analysis_result, categories):
     return analysis_result, reprompt, bad_categories
 
 
-def analyze_bills_batch(bill_texts, model="openai/gpt-oss-120b:free", max_retries=2):
+def analyze_bills_batch(bills, model, max_retries=2):
     """
     Analyze multiple bills in batch.
 
     Args:
-        bill_texts (list): List of bill text strings to analyze
+        bills (list): List of bill dicts, each with keys:
+            - "bill_text" (str): The full text of the bill to analyze
+            - "legislative_subjects" (list): Legislative subjects for the bill
+            - "top_subject" (str): The top subject term for the bill
         model (str): The model to use for analysis
         max_retries (int): Maximum number of retry attempts per bill
 
@@ -426,11 +434,17 @@ def analyze_bills_batch(bill_texts, model="openai/gpt-oss-120b:free", max_retrie
         list: List of analysis results (dicts)
     """
     results = []
-    for i, bill_text in enumerate(bill_texts):
+    for i, bill in enumerate(bills):
         try:
-            result = analyze_bill(bill_text, model, max_retries)
+            result = analyze_bill(
+                bill["bill_text"],
+                bill["legislative_subjects"],
+                bill["top_subject"],
+                model,
+                max_retries=max_retries,
+            )
             results.append(result)
-            print(f"Successfully analyzed bill {i+1}/{len(bill_texts)}")
+            print(f"Successfully analyzed bill {i+1}/{len(bills)}")
         except Exception as e:
             print(f"Failed to analyze bill {i+1} after all retry attempts: {e}")
             results.append({"error": str(e)})

@@ -10,11 +10,13 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI", f"mongodb://localhost:{PORT}/")
 DB_NAME = os.getenv("DB_NAME", "political_stance_tracker")
 
+# MongoClient singleton instance
+_client: MongoClient = MongoClient(MONGO_URI)
+
 
 def get_db():
     """Return a reference to the MongoDB database."""
-    client: MongoClient = MongoClient(MONGO_URI)
-    return client[DB_NAME]
+    return _client[DB_NAME]
 
 
 def ensure_indexes():
