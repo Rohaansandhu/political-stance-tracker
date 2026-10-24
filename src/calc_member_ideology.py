@@ -4,11 +4,14 @@ from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
+from analysis.axis_analysis_client import AXIS_SCHEMA_VERSION
 from analysis.bill_analysis_client import SCHEMA_VERSION
 import db.db_utils as db_utils
+from calc_institutional import calculate_institutional_scores
 from pymongo import UpdateOne
 
-from schema.legislator_profiles import LegislatorProfile, CategoryStats
+from utils.stat_utils import within_group_zscores
+from utils.vote_utils import build_bill_id, get_vote_value
 
 
 DATA_DIR = Path("data")
@@ -17,20 +20,17 @@ INPUT_COLLECTION = "bill_analyses"
 OUTPUT_DIR = Path("data/legislator_profiles")
 OUTPUT_DIR.mkdir(exist_ok=True)
 OUTPUT_COLLECTION = "legislator_profiles"
+AXIS_INPUT_COLLECTION = "bill_axis_analyses"
 
+# left_right is derived from category analyses, institutional is computed from roll calls
+LEFT_RIGHT = "left_right"
+INSTITUTIONAL = "institutional"
 
-def build_bill_id(bill: dict) -> str:
-    """
-    Turn a bill object into a string for id.
-    Example: {"congress":119,"number":242,"type":"hres"}
-             -> "hres242-119"
-    """
-    if bill == {}:
-        return ""
-    congress = bill["congress"]
-    number = bill["number"]
-    btype = bill["type"]
-    return "%s%s-%s" % (btype, number, congress)
+# Profile fields of {name: {score, bill_count}} that get weighted and ranked
+RANKED_FIELDS = ("primary_categories", "axes")
+
+PARTIES = {"D", "R"}
+MIN_BILLS_FOR_Z = 10
 
 
 def extract_top_votes(votes, n=3):
@@ -124,9 +124,111 @@ def check_inputs(model, schema, congress, chamber, bill_type):
                 raise ValueError(f"Bill types must be (hr, hjres, s, sjres) not {bt}")
 
 
-def calculate_legislator_ideology(legislator_votes, bill_analyses):
+def collect_category_votes(
+    political_categories, bill_id, vote, date, vote_value, primary_votes, sub_votes
+):
+    """
+    Add one vote's weighted score to each category/subcategory the bill was tagged with.
+    Returns the weighted scores added to primary categories (used to derive left_right).
+    """
+    primary_scores = []
+
+    for primary_category in political_categories.get("primary_categories", []):
+        if isinstance(primary_category, dict) and primary_category.get("name"):
+            category_name = primary_category.get("name", "")
+            partisan_score = primary_category.get("partisan_score", 0)
+            impact_score = primary_category.get("impact_score", 0)
+            weighted_score = partisan_score * impact_score * vote_value
+
+            if partisan_score != 0:
+                primary_votes[category_name].append(
+                    {
+                        "bill_id": bill_id,
+                        "weighted_score": weighted_score,
+                        "vote": vote,
+                        "date": date,
+                    }
+                )
+                primary_scores.append(weighted_score)
+
+    for subcategory in political_categories.get("subcategories", []):
+        if isinstance(subcategory, dict) and subcategory.get("name"):
+            category_name = subcategory.get("name", "")
+            partisan_score = subcategory.get("partisan_score", 0)
+            impact_score = subcategory.get("impact_score", 0)
+            weighted_score = partisan_score * impact_score * vote_value
+
+            if partisan_score != 0:
+                sub_votes[category_name].append(
+                    {
+                        "bill_id": bill_id,
+                        "weighted_score": weighted_score,
+                    }
+                )
+
+    return primary_scores
+
+
+def collect_axis_votes(
+    axis_analysis,
+    primary_names,
+    bill_id,
+    vote_value,
+    axis_votes,
+    axis_category_votes,
+):
+    """
+    Add one vote's weighted score to each axis the bill was scored on, and to that axis's
+    breakdown for each primary category the bill is tagged with.
+    """
+    for axis_score in axis_analysis.get("axis_scores", []):
+        position = axis_score.get("position", 0)
+        relevance = axis_score.get("relevance", 0)
+        if position == 0 or relevance == 0:
+            continue
+
+        axis = axis_score["axis"]
+        record = {
+            "bill_id": bill_id,
+            "weighted_score": position * relevance * vote_value,
+        }
+        axis_votes[axis].append(record)
+        for category_name in primary_names:
+            axis_category_votes[axis][category_name].append(record)
+
+
+def build_axis_results(axis_votes, axis_category_votes):
+    """Average each axis, with its per-category breakdown."""
+    results = calculate_average_scores(axis_votes)
+    for axis, stats in results.items():
+        stats["by_category"] = calculate_average_scores(axis_category_votes[axis])
+    return results
+
+
+def build_left_right_result(left_right_votes, primary_category_results):
+    """
+    left_right is derived from the category analyses: each bill's primary-category
+    scores averaged together. Its per-category breakdown is the category scores themselves.
+    """
+    result = calculate_average_scores({LEFT_RIGHT: left_right_votes}).get(LEFT_RIGHT)
+    if result is None:
+        return None
+
+    result["by_category"] = {
+        category: {"score": stats["score"], "bill_count": stats["bill_count"]}
+        for category, stats in primary_category_results.items()
+    }
+    return result
+
+
+def calculate_legislator_ideology(legislator_votes, bill_analyses, axis_analyses=None):
+    axis_analyses = axis_analyses or {}
+
     primary_category_votes = defaultdict(list)
     subcategory_votes = defaultdict(list)
+    left_right_votes = []
+    axis_votes = defaultdict(list)
+    axis_category_votes = defaultdict(lambda: defaultdict(list))
 
     vote_count = 0
     for vote_record in legislator_votes:
@@ -147,39 +249,37 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
 
         political_categories = bill_analysis.get("political_categories", {})
 
-        # Primary categories
-        for primary_category in political_categories.get("primary_categories", []):
-            if isinstance(primary_category, dict) and primary_category.get("name"):
-                category_name = primary_category.get("name", "")
-                partisan_score = primary_category.get("partisan_score", 0)
-                impact_score = primary_category.get("impact_score", 0)
-                weighted_score = partisan_score * impact_score * vote_value
+        primary_scores = collect_category_votes(
+            political_categories,
+            bill_id,
+            vote,
+            date,
+            vote_value,
+            primary_category_votes,
+            subcategory_votes,
+        )
+        if primary_scores:
+            left_right_votes.append(
+                {
+                    "bill_id": bill_id,
+                    "weighted_score": sum(primary_scores) / len(primary_scores),
+                }
+            )
 
-                if partisan_score != 0:
-                    primary_category_votes[category_name].append(
-                        {
-                            "bill_id": bill_id,
-                            "weighted_score": weighted_score,
-                            "vote": vote,
-                            "date": date,
-                        }
-                    )
-
-        # Subcategories
-        for subcategory in political_categories.get("subcategories", []):
-            if isinstance(subcategory, dict) and subcategory.get("name"):
-                category_name = subcategory.get("name", "")
-                partisan_score = subcategory.get("partisan_score", 0)
-                impact_score = subcategory.get("impact_score", 0)
-                weighted_score = partisan_score * impact_score * vote_value
-
-                if partisan_score != 0:
-                    subcategory_votes[category_name].append(
-                        {
-                            "bill_id": bill_id,
-                            "weighted_score": weighted_score,
-                        }
-                    )
+        if bill_id in axis_analyses:
+            primary_names = [
+                c["name"]
+                for c in political_categories.get("primary_categories", [])
+                if isinstance(c, dict) and c.get("name")
+            ]
+            collect_axis_votes(
+                axis_analyses[bill_id],
+                primary_names,
+                bill_id,
+                vote_value,
+                axis_votes,
+                axis_category_votes,
+            )
 
         vote_count += 1
 
@@ -188,6 +288,11 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
     for category, votes in primary_category_votes.items():
         if category in primary_category_results:
             primary_category_results[category]["top_bills"] = extract_top_votes(votes)
+
+    axis_results = build_axis_results(axis_votes, axis_category_votes)
+    left_right = build_left_right_result(left_right_votes, primary_category_results)
+    if left_right:
+        axis_results[LEFT_RIGHT] = left_right
 
     # Flatten and deduplicate for overall recent votes
     all_votes_flat = [
@@ -205,28 +310,15 @@ def calculate_legislator_ideology(legislator_votes, bill_analyses):
     return {
         "primary_category_classifications": primary_category_results,
         "subcategory_classifications": calculate_average_scores(subcategory_votes),
+        "axis_classifications": axis_results,
         "vote_count": vote_count,
         "recent_votes": extract_recent_votes(all_votes_deduped),
     }
 
 
-def get_vote_value(vote):
-    """Convert vote string to multiplier."""
-    vote_lower = vote.lower().strip()
-
-    # Support votes
-    if vote_lower in {"yea", "yes", "aye", "y"}:
-        return 1
-
-    # Opposition votes
-    if vote_lower in {"nay", "no", "n"}:
-        return -1
-
-    # Didn't vote
-    return 0
-
-
-def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
+def create_legislator_profile(
+    legislator_info, legislator_votes, bill_analyses, axis_analyses=None
+):
     """
     Create complete legislator ideology profile.
 
@@ -234,11 +326,14 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
         legislator_info (dict): Basic info {"member_id": "A000360", "name": "Rep. X", "party": "D", "state": "CA"}
         legislator_votes (list): Vote records
         bill_analyses (dict): Bill analysis results
+        axis_analyses (dict): Bill axis analysis results, keyed by bill_id
 
     Returns:
         dict: Complete legislator profile with ideology scores
     """
-    ideology_data = calculate_legislator_ideology(legislator_votes, bill_analyses)
+    ideology_data = calculate_legislator_ideology(
+        legislator_votes, bill_analyses, axis_analyses
+    )
 
     profile = {
         "member_id": legislator_info.get("member_id"),
@@ -246,65 +341,12 @@ def create_legislator_profile(legislator_info, legislator_votes, bill_analyses):
         "party": legislator_info.get("party"),
         "state": legislator_info.get("state"),
         "primary_categories": ideology_data["primary_category_classifications"],
+        "axes": ideology_data["axis_classifications"],
         "vote_count": ideology_data["vote_count"],
         "recent_votes": ideology_data["recent_votes"],
     }
 
     return profile
-
-
-def standardize_spectrum_scores(spectrum_scores):
-    """Convert various spectrum scores to standardized left_right and authoritarian_libertarian scales."""
-    standard_scores = {}
-
-    # Map various spectrums to left-right scale
-    left_right_spectrums = [
-        "Government Role",
-        "Economic Policy",
-        "Social Policy",
-        "Environmental Spectrum",
-        "Cultural Policy",
-        "Economic Globalization",
-        "Corporate Power",
-        "Progress vs Tradition",
-        "Foreign Policy",
-        "Tech & Privacy",
-        "Individualism vs Collectivism",
-        "Criminal Justice",
-        "Education",
-        "Immigration",
-    ]
-    left_right_values = []
-
-    for spectrum in left_right_spectrums:
-        if spectrum in spectrum_scores:
-            left_right_values.append(spectrum_scores[spectrum])
-
-    if left_right_values:
-        standard_scores["left_right"] = round(
-            sum(left_right_values) / len(left_right_values), 3
-        )
-
-    # Map to authoritarian-libertarian scale
-    # -1 = libertarian, 1 = authoritarian
-    auth_lib_spectrums = [
-        "Federalism",
-        "Civil Liberties vs Security",
-        "Democracy vs Authoritarianism",
-        # "Populism vs Elitism", Ambigous spectrum so leaving it out for now
-    ]
-    auth_lib_values = []
-
-    for spectrum in auth_lib_spectrums:
-        if spectrum in spectrum_scores:
-            auth_lib_values.append(spectrum_scores[spectrum])
-
-    if auth_lib_values:
-        standard_scores["authoritarian_libertarian"] = round(
-            sum(auth_lib_values) / len(auth_lib_values), 3
-        )
-
-    return standard_scores
 
 
 def build_legislator_info(legislator_data):
@@ -317,12 +359,38 @@ def build_legislator_info(legislator_data):
     return legislator_info
 
 
-def process_all_legislators(bill_analyses, model, spec_hash, schema=None, chamber=None):
+def build_institutional_stats(institutional_scores, member_id):
+    """Axis stats for the computed institutional axis, or None if the member has none."""
+    stats = institutional_scores.get(member_id)
+    if stats is None:
+        return None
+    return {
+        "score": stats["score"],
+        # Roll calls rather than bills, but named bill_count so every axis has the same shape
+        "bill_count": stats["vote_count"],
+        "defection_rate": stats["defection_rate"],
+        "by_category": {},
+    }
+
+
+def process_all_legislators(
+    bill_analyses,
+    model,
+    spec_hash,
+    schema=None,
+    chamber=None,
+    axis_analyses=None,
+    axis_schema=None,
+    institutional_scores=None,
+):
     """Process ideology scores for all legislators"""
 
     # If schema not specified, use latest version
     if schema is None:
         schema = SCHEMA_VERSION
+    if axis_schema is None:
+        axis_schema = AXIS_SCHEMA_VERSION
+    institutional_scores = institutional_scores or {}
 
     profiles = []
     # Get collection
@@ -343,16 +411,23 @@ def process_all_legislators(bill_analyses, model, spec_hash, schema=None, chambe
         )
 
         profile = create_legislator_profile(
-            legislator_info, legislator_votes, bill_analyses
+            legislator_info, legislator_votes, bill_analyses, axis_analyses
         )
 
         # Don't add profiles for legislator's that had no votes with the active filters
         if profile["vote_count"] == 0:
             continue
 
+        institutional = build_institutional_stats(
+            institutional_scores, legislator_data["member_id"]
+        )
+        if institutional:
+            profile["axes"][INSTITUTIONAL] = institutional
+
         # Add unique metadata
         profile["model"] = model
         profile["schema_version"] = schema
+        profile["axis_schema_version"] = axis_schema
         profile["spec_hash"] = spec_hash
 
         profiles.append(profile)
@@ -404,16 +479,20 @@ def load_bill_analyses_from_data():
     return bill_analyses
 
 
-def get_spec_hash(model, schema, congress=None, chamber=None, bill_type=None) -> str:
-    """Generate a readable spec hash like: model_schema_congress_chamber_billtype.
+def get_spec_hash(
+    model, schema, congress=None, chamber=None, bill_type=None, axis_schema=None
+) -> str:
+    """Generate a readable spec hash like: model_schema_axN_congress_chamber_billtype.
 
-    Model and schema are required. Congress, chamber, and bill_type are optional.
+    Model and schema are required. Axis schema, congress, chamber, and bill_type are optional.
     """
     # If not specified, latest was used
     if schema is None:
         schema = SCHEMA_VERSION
+    if axis_schema is None:
+        axis_schema = AXIS_SCHEMA_VERSION
 
-    parts = [model, str(schema)]
+    parts = [model, str(schema), f"ax{axis_schema}"]
     if congress:
         parts.append(str(congress))
     else:
@@ -431,32 +510,34 @@ def get_spec_hash(model, schema, congress=None, chamber=None, bill_type=None) ->
     return "_".join(parts)
 
 
-def load_bill_analyses_from_db(
-    model, schema_version=None, congress=None, bill_type=None
-):
-    """
-    Load bill analyses from MongoDB, filtering by model and optionally schema version.
-    """
-    bill_analyses = {}
-    collection = db_utils.get_collection(INPUT_COLLECTION)
-
-    if schema_version is None:
-        # Get latest schema version available
-        schema_version = SCHEMA_VERSION
-
-    query = {"model": model, "schema_version": schema_version}
-
+def load_analyses_from_db(collection_name, query, congress=None, bill_type=None):
+    """Load analyses matching `query` from a collection, keyed by bill_id."""
     # Optional filters
     if congress:
         query["congress"] = str(congress)
     if bill_type:
         query["bill_type"] = {"$in": bill_type}
 
-    for analysis_data in collection.find(query):
+    analyses = {}
+    for analysis_data in db_utils.get_collection(collection_name).find(query):
         bill_id = analysis_data.get("bill_id")
-        if bill_id:
-            if bill_id not in bill_analyses:
-                bill_analyses[bill_id] = analysis_data
+        if bill_id and bill_id not in analyses:
+            analyses[bill_id] = analysis_data
+    return analyses
+
+
+def load_bill_analyses_from_db(
+    model, schema_version=None, congress=None, bill_type=None
+):
+    """
+    Load bill analyses from MongoDB, filtering by model and optionally schema version.
+    """
+    if schema_version is None:
+        # Get latest schema version available
+        schema_version = SCHEMA_VERSION
+
+    query = {"model": model, "schema_version": schema_version}
+    bill_analyses = load_analyses_from_db(INPUT_COLLECTION, query, congress, bill_type)
 
     print(
         f"Loaded {len(bill_analyses)} bill analyses for model '{model}' (schema v{schema_version})"
@@ -464,10 +545,31 @@ def load_bill_analyses_from_db(
     return bill_analyses
 
 
-def apply_bayesian_weighting(profiles):
+def load_axis_analyses_from_db(
+    model, axis_schema_version=None, congress=None, bill_type=None
+):
+    """
+    Load bill axis analyses from MongoDB, filtering by model and optionally axis schema version.
+    """
+    if axis_schema_version is None:
+        axis_schema_version = AXIS_SCHEMA_VERSION
+
+    query = {"model": model, "axis_schema_version": axis_schema_version}
+    axis_analyses = load_analyses_from_db(
+        AXIS_INPUT_COLLECTION, query, congress, bill_type
+    )
+
+    print(
+        f"Loaded {len(axis_analyses)} axis analyses for model '{model}' (axis schema v{axis_schema_version})"
+    )
+    return axis_analyses
+
+
+def apply_bayesian_weighting(profiles, field="primary_categories", skip=()):
     """
     Applies Bayesian weighting to legislator scores using their party's average as the prior.
     m is determined empirically per category based on the distribution of bill counts.
+    `field` is the profile dict of {name: stats} to weight; names in `skip` are left as is.
     """
     # Collect all counts and raw data for prior calculation
     category_counts = defaultdict(list)
@@ -479,9 +581,11 @@ def apply_bayesian_weighting(profiles):
 
     for profile in profiles:
         party = profile.get("party")
-        categories = profile.get("primary_categories", {})
+        categories = profile.get(field, {})
 
         for cat_name, cat_data in categories.items():
+            if cat_name in skip:
+                continue
             count = cat_data.get("bill_count", 0)
             if count > 0:
                 category_counts[cat_name].append(count)
@@ -515,7 +619,9 @@ def apply_bayesian_weighting(profiles):
     for profile in profiles:
         party = profile.get("party")
 
-        for cat_name, cat_data in profile.get("primary_categories", {}).items():
+        for cat_name, cat_data in profile.get(field, {}).items():
+            if cat_name in skip:
+                continue
             v = cat_data.get("bill_count", 0)
             R = cat_data.get("score", 0)
             m = m_per_category.get(cat_name, 10)
@@ -539,8 +645,29 @@ def apply_bayesian_weighting(profiles):
     return profiles
 
 
+def add_within_party_z(profiles):
+    """
+    Add `within_party_z` to every axis: the score's z-score among members of the same party
+    (D or R) with enough bills on that axis. None where it can't be computed.
+    """
+    groups = defaultdict(list)
+    for profile in profiles:
+        party = profile.get("party")
+        for axis, stats in profile.get("axes", {}).items():
+            stats["within_party_z"] = None
+            if party in PARTIES and stats["bill_count"] >= MIN_BILLS_FOR_Z:
+                groups[(party, axis)].append(stats)
+
+    for group in groups.values():
+        z_scores = within_group_zscores([stats["score"] for stats in group])
+        for stats, z in zip(group, z_scores):
+            stats["within_party_z"] = None if z is None else round(z, 3)
+
+    return profiles
+
+
 def generate_rankings(profiles):
-    """Generate rankings for each category/spectrum across all profiles."""
+    """Generate rankings for each category and axis across all profiles."""
     all_rows = []
     all_current_rows = []
 
@@ -559,7 +686,7 @@ def generate_rankings(profiles):
     # Collect data from every profile
     for profile in profiles:
         is_current = profile["member_id"] in current_legislators
-        for field in ["primary_categories"]:
+        for field in RANKED_FIELDS:
             data = profile.get(field, {})
 
             for category, details in data.items():
@@ -619,7 +746,7 @@ def generate_rankings(profiles):
     # Now push results back into each profile
     for profile in profiles:
         is_current = profile["member_id"] in current_legislators
-        for field in ["primary_categories"]:
+        for field in RANKED_FIELDS:
             sub = df[(df["field"] == field) & (df["member_id"] == profile["member_id"])]
 
             for _, row in sub.iterrows():
@@ -707,6 +834,11 @@ if __name__ == "__main__":
         type=int,
         help="Optionally specify schema version (defaults to latest)",
     )
+    parser.add_argument(
+        "--axis_schema",
+        type=int,
+        help="Optionally specify axis schema version (defaults to latest)",
+    )
     # Optional paramaters
     parser.add_argument(
         "--congress",
@@ -730,23 +862,51 @@ if __name__ == "__main__":
         args.model, args.schema, args.congress, args.bill_type
     )
 
+    # Load axis analyses for the same model (axes are skipped if none exist yet)
+    axis_analyses = load_axis_analyses_from_db(
+        args.model, args.axis_schema, args.congress, args.bill_type
+    )
+    if not axis_analyses:
+        print("WARNING: No axis analyses found, profiles will only have category scores")
+
     # Check if bill analyses is empty
     if bill_analyses:
 
         # Get hash
         spec_hash = get_spec_hash(
-            args.model, args.schema, args.congress, args.chamber, args.bill_type
+            args.model,
+            args.schema,
+            args.congress,
+            args.chamber,
+            args.bill_type,
+            args.axis_schema,
+        )
+
+        # Institutional axis is computed from all roll calls, not just analyzed bills
+        institutional_scores = calculate_institutional_scores(
+            args.congress, args.chamber
         )
 
         # Process all legislators
         profiles = process_all_legislators(
-            bill_analyses, args.model, spec_hash, args.schema, args.chamber
+            bill_analyses,
+            args.model,
+            spec_hash,
+            args.schema,
+            args.chamber,
+            axis_analyses,
+            args.axis_schema,
+            institutional_scores,
         )
 
-        # Apply Bayesian weighting
+        # Apply Bayesian weighting (institutional is already computed over all roll calls)
         profiles = apply_bayesian_weighting(profiles)
+        profiles = apply_bayesian_weighting(profiles, "axes", skip={INSTITUTIONAL})
 
-        # Create rankings for each category/spectrum
+        # Compare members to their own party
+        profiles = add_within_party_z(profiles)
+
+        # Create rankings for each category and axis
         profiles = generate_rankings(profiles)
 
         # Write profiles

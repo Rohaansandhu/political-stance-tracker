@@ -1,4 +1,4 @@
-# Script to store aggregated stats per spec_hash per category/spectrum
+# Script to store aggregated stats per spec_hash per category and axis
 # Used for quick frontend graph generation
 import argparse
 import numpy as np
@@ -207,7 +207,7 @@ def generate_stats(spec_hash: str, current_ids: list) -> List[Dict]:
     print(f"Found {len(profiles)} profiles for {spec_hash}")
 
     # Fields to process
-    fields = ["detailed_spectrums", "main_categories", "primary_categories"]
+    fields = ["primary_categories", "axes"]
 
     # Extract all categories for each field
     categories_by_field = extract_categories_from_profiles(profiles, fields)
@@ -291,7 +291,7 @@ def write_stats_to_db(stats: List[Dict]):
     histogram_actions = []
     scatter_actions = []
     for stat in stats:
-        # Unique key: spec_hash + field (spectrum vs category) + subject (specific cat/spec) + chart_type
+        # Unique key: spec_hash + field (category vs axis) + subject (specific category/axis) + chart_type
         key_vals = {
             "spec_hash": stat["spec_hash"],
             "field": stat["field"],
@@ -330,7 +330,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--spec_hash",
-        help="Run all category/spectrums for a spec_hash",
+        help="Run all categories and axes for a spec_hash",
     )
 
     args = parser.parse_args()

@@ -1,55 +1,20 @@
-from datetime import datetime, timezone
-from openai import OpenAI
-from dotenv import load_dotenv
+from analysis.definitions import load_categories, load_reduced_categories
+from analysis.llm_common import client, clean_json_response, truncate_bill_text
 from schema.bill_analyses import BillAnalysis
-import os
 import json
-import re
 from rapidfuzz import fuzz, process
 
-# Load environment variables once when module is imported
-load_dotenv()
-
-# Determine which client to use (Specify with env variable)
-# Currently supported clients: openrouter or gemini or cerebras
-CLIENT = os.getenv("CLIENT")
-
-# Initialize client once when module is imported
-if CLIENT == "openrouter":
-    client = OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=os.getenv("OPENROUTER_API_KEY"),
-    )
-elif CLIENT == "gemini":
-    client = OpenAI(
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-        api_key=os.getenv("GEMINI_API_KEY"),
-    )
-elif CLIENT == "cerebras":
-    client = OpenAI(
-        base_url="https://api.cerebras.ai/v1",
-        api_key=os.environ.get("CEREBRAS_API_KEY"),
-    )
-elif CLIENT == "openai":
-    client = OpenAI(
-        api_key=os.getenv("OPENAI_API_KEY"),
-    )
-else:
-    raise ValueError(
-        f"Unsupported or missing CLIENT env variable: {CLIENT!r}. "
-        "Set CLIENT to one of: openrouter, gemini, cerebras, openai."
-    )
-
-# Update Schema after every change to prompts/categories/spectrums
-SCHEMA_VERSION = 4
+# Update Schema after every change to prompts/categories
+SCHEMA_VERSION = 5
 
 SYSTEM_PROMPT = """
 You are an expert political analyst specializing in legislative classification. 
 
 Your task is to analyze bills and determine:
 
-1. POLITICAL CATEGORIES: Classify the bill into relevant policy areas (e.g., economic, social, regulatory, environmental, defense, healthcare, etc.)
+1. POLITICAL CATEGORIES: Classify the bill into relevant policy topics (e.g., healthcare, defense, immigration, etc.)
 - Only use categories provided in the user prompt
+- A category is a topic. Use its scope to decide whether a bill belongs to it
 
 2. VOTING POSITION ANALYSIS: For both YES and NO votes, determine:
 - Which political position it represents (liberal/progressive vs conservative)
@@ -59,17 +24,6 @@ Your task is to analyze bills and determine:
 Provide your analysis in a structured format with clear reasoning for each classification.
 Be objective and consider multiple political perspectives.
 """
-
-
-def load_political_frameworks():
-    """Load political categories from JSON files."""
-    with open("political_definitions/political_categories.json", "r") as f:
-        categories = json.load(f)
-
-    with open("political_definitions/reduced_political_categories.json", "r") as f:
-        reduced_categories = json.load(f)
-
-    return categories, reduced_categories
 
 
 # TODO: Split up this function, clean more of the processing logic
@@ -92,17 +46,10 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
     if not bill_text.strip():
         raise ValueError("Bill text cannot be empty")
 
-    # Safe for most models (16K tokens)
-    MAX_BILL_CHARS = 64000
+    bill_text, bill_truncated = truncate_bill_text(bill_text)
 
-    bill_truncated = False
-    if len(bill_text) > MAX_BILL_CHARS:
-        print(f"Bill truncated: {len(bill_text)} -> {MAX_BILL_CHARS} chars")
-        bill_text = bill_text[:MAX_BILL_CHARS] + "\n\n[Bill text truncated]"
-        bill_truncated = True
-
-    # Load political frameworks
-    categories, reduced_categories = load_political_frameworks()
+    categories = load_categories()
+    reduced_categories = load_reduced_categories()
 
     # Create a comma separated string, joining together all subjects
     subjects_text = ", ".join(legislative_subjects)
@@ -133,10 +80,11 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
                         {top_subject}
 
                         Please provide:
-                        1. Classify the bill into any relevant political categories and subcategories. 
-                           Only use the categories/spectrums provided above. Do NOT create new ones.
+                        1. Classify the bill into any relevant political categories and subcategories.
+                           Each category is a topic described by its scope. Only use the categories provided above. Do NOT create new ones.
                            Determine the impact on each relevant category using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
-                           Rate the bill on how conservative/progressive it is within each category. Use a scale of -1 to 1, where:
+                           Rate the bill on how conservative/progressive it is within each category. The liberal_view and conservative_view
+                           of each category are the two poles of that category's left-right scale. Use a scale of -1 to 1, where:
                             - -1 = fully aligned with the liberal_view
                             - 0 = neutral or mixed
                             - 1 = fully aligned with the conservative_view
@@ -263,7 +211,7 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
             last_response = response_content
 
             # Try to clean up common JSON issues
-            response_content = _clean_json_response(response_content)
+            response_content = clean_json_response(response_content)
 
             # Parse JSON response
             try:
@@ -326,32 +274,6 @@ def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retrie
             raise Exception(f"API call failed: {e}")
 
 
-def _clean_json_response(response_content):
-    """Clean up common JSON formatting issues."""
-    # Remove markdown code blocks if present
-    if response_content.startswith("```"):
-        lines = response_content.split("\n")
-        # Remove first line if it's ```json or ```
-        if lines[0].startswith("```"):
-            lines = lines[1:]
-        # Remove last line if it's ```
-        if lines and lines[-1].strip() == "```":
-            lines = lines[:-1]
-        response_content = "\n".join(lines)
-
-    # Remove any text before the first {
-    first_brace = response_content.find("{")
-    if first_brace > 0:
-        response_content = response_content[first_brace:]
-
-    # Remove any text after the last }
-    last_brace = response_content.rfind("}")
-    if last_brace != -1 and last_brace < len(response_content) - 1:
-        response_content = response_content[: last_brace + 1]
-
-    return response_content.strip()
-
-
 def correct_name(name, valid_names, score_threshold=70):
     """
     Return the corrected name if a close match exists in valid_names.
@@ -394,7 +316,7 @@ def validate(analysis_result):
 
 
 def validate_names(analysis_result, categories):
-    """Validate the analysis result against known categories and spectrums."""
+    """Validate the analysis result against known categories."""
     valid_category_names = {cat["name"] for cat in categories["political_categories"]}
 
     # Set to True if we couldn't fix names manually

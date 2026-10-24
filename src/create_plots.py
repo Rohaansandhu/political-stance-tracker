@@ -1,29 +1,25 @@
 import argparse
-import re
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from pathlib import Path
 import db.db_utils as db_utils
+from analysis.definitions import load_axes
+from utils.path_utils import get_output_dir, sanitize_filename
+
+PARTY_COLORS = {"D": "blue", "R": "red", "I": "yellow"}
 
 
-def sanitize_filename(name: str) -> str:
-    """Replace invalid filename characters with underscores."""
-    return re.sub(r"[^\w\-_.]", "_", name)
-
-
-def get_output_dir(spec_hash):
-    """Construct and ensure output directory exists."""
-
-    sanitezed_hash = sanitize_filename(spec_hash)
-    output_dir = Path("data/plots") / sanitezed_hash
-    output_dir.mkdir(parents=True, exist_ok=True)
-    return output_dir
+def axis_score_labels():
+    """x-axis labels for axis plots: '<-1 pole> (-1)  to  <+1 pole> (+1)'."""
+    return {
+        axis["id"]: f"{axis['negative_pole']['label']} (-1)  to  {axis['positive_pole']['label']} (+1)"
+        for axis in load_axes()
+    }
 
 
 def plot_boxplots(df, title, group_name, output_dir):
-    """Create boxplots for all groups (spectrums, categories, scores)"""
+    """Create boxplots for all groups (categories, axes)"""
     # Create a subfolder for this category inside output_dir
     category_dir = output_dir / sanitize_filename(title)
     category_dir.mkdir(parents=True, exist_ok=True)
@@ -37,7 +33,7 @@ def plot_boxplots(df, title, group_name, output_dir):
             x="party",
             y="score",
             hue="party",
-            palette={"D": "blue", "R": "red", "I": "yellow"},
+            palette=PARTY_COLORS,
             legend=False,
         )
         plt.title(f"{title}: {group}")
@@ -51,7 +47,9 @@ def plot_boxplots(df, title, group_name, output_dir):
     print(f"Created boxplots for {len(groups)} groups")
 
 
-def plot_histograms(df, title, group_name, output_dir):
+def plot_histograms(df, title, group_name, output_dir, xlabels=None):
+    """Stacked-by-party histograms. `xlabels` optionally maps a group to its x-axis label."""
+    xlabels = xlabels or {}
     # Create a subfolder for this category inside output_dir
     category_dir = output_dir / sanitize_filename(title)
     category_dir.mkdir(parents=True, exist_ok=True)
@@ -61,16 +59,15 @@ def plot_histograms(df, title, group_name, output_dir):
         sub = df[df[group_name] == group]
         plt.figure(figsize=(6, 4))
         parties = sub["party"].unique()
-        party_colors = {"D": "blue", "R": "red", "I": "yellow"}
         plt.hist(
             [sub[sub["party"] == p]["score"] for p in parties],
             bins=np.linspace(-1, 1, 20),
             stacked=True,
-            color=[party_colors[p] for p in parties],
+            color=[PARTY_COLORS[p] for p in parties],
             label=parties,
         )
         plt.title(f"{title}: {group}")
-        plt.xlabel("Score")
+        plt.xlabel(xlabels.get(group, "Score"))
         plt.ylabel("Count")
         plt.legend()
         plt.tight_layout()
@@ -82,6 +79,38 @@ def plot_histograms(df, title, group_name, output_dir):
     print(f"Created histograms for {len(groups)} groups")
 
 
+def plot_party_histograms(df, title, group_name, output_dir, xlabels=None):
+    """Within-party view: one histogram panel per party, so each party's spread is visible."""
+    xlabels = xlabels or {}
+    category_dir = output_dir / sanitize_filename(title)
+    category_dir.mkdir(parents=True, exist_ok=True)
+
+    groups = df[group_name].unique()
+    for group in groups:
+        sub = df[df[group_name] == group]
+        parties = [p for p in PARTY_COLORS if p in set(sub["party"])]
+        fig, axes = plt.subplots(
+            1, len(parties), figsize=(4 * len(parties), 4), sharex=True, sharey=True,
+            squeeze=False,
+        )
+        for ax, party in zip(axes[0], parties):
+            ax.hist(
+                sub[sub["party"] == party]["score"],
+                bins=np.linspace(-1, 1, 20),
+                color=PARTY_COLORS[party],
+            )
+            ax.set_title(party)
+            ax.set_xlabel(xlabels.get(group, "Score"), fontsize=7)
+        axes[0][0].set_ylabel("Count")
+        fig.suptitle(f"{title}: {group}")
+        fig.tight_layout()
+
+        filename = category_dir / f"party_hist_{sanitize_filename(group)}.png"
+        fig.savefig(filename)
+        plt.close(fig)
+    print(f"Created per-party histograms for {len(groups)} groups")
+
+
 def load_profiles(spec_hash):
     """Load legislator_profiles collection and return dict of DataFrames for each score type."""
 
@@ -90,23 +119,20 @@ def load_profiles(spec_hash):
     count = profile_coll.count_documents(query)
     # Raise error if no profiles were found
     if count == 0:
-        return ValueError(f"ERROR: No profiles were found")
+        raise ValueError(f"ERROR: No profiles were found")
     profiles = profile_coll.find(query)
 
-
-    # Data collectors by category type
+    # Data collectors by field
     data = {
-        "detailed_spectrums": [],
-        "main_categories": [],
         "primary_categories": [],
-        "secondary_categories": [],
+        "axes": [],
         # "subcategories": [], Excluding subcategories for now, may remove in future schema versions, lack of precision between models
     }
 
     for doc in profiles:
         party = doc.get("party")
 
-        # Each key is a dict like { "category_name": score_value }
+        # Each key is a dict like { "category_or_axis_name": stats }
         for field in data.keys():
             field_data = doc.get(field, {})
             for name, score in field_data.items():
@@ -130,12 +156,16 @@ def main(args):
 
     dfs = load_profiles(args.spec_hash)
 
-    output_dir = get_output_dir(args.spec_hash)
+    output_dir = get_output_dir("data/plots", args.spec_hash)
+    axis_labels = axis_score_labels()
 
     for name, df in dfs.items():
         print(f"Plotting {name} ({len(df)} records)")
-        plot_boxplots(df, name.replace("_", " ").title(), "category", output_dir)
-        plot_histograms(df, name.replace("_", " ").title(), "category", output_dir)
+        title = name.replace("_", " ").title()
+        xlabels = axis_labels if name == "axes" else None
+        plot_boxplots(df, title, "category", output_dir)
+        plot_histograms(df, title, "category", output_dir, xlabels)
+        plot_party_histograms(df, title, "category", output_dir, xlabels)
 
 
 if __name__ == "__main__":

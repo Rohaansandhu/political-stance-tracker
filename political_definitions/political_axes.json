@@ -1,0 +1,454 @@
+{
+  "political_axes": [
+    {
+      "id": "left_right",
+      "name": "Left-Right",
+      "tier": "keep",
+      "source": "derived",
+      "computed": false,
+      "negative_pole": {
+        "label": "Liberal",
+        "description": "Aligned with the category's liberal_view."
+      },
+      "positive_pole": {
+        "label": "Conservative",
+        "description": "Aligned with the category's conservative_view."
+      },
+      "scoring_rule": "Not scored separately. Aggregated from each bill's per-category partisan_score. A YES vote on a bill with partisan_score s and impact i contributes s * i.",
+      "boundary_rules": [],
+      "typical_categories": {
+        "most": [
+          "Economy & Finance",
+          "Budget & Appropriations",
+          "Labor & Employment",
+          "Healthcare",
+          "Education",
+          "Infrastructure & Transportation",
+          "Environment & Energy",
+          "Science & Technology",
+          "Agriculture & Rural Issues",
+          "Criminal Justice",
+          "Civil Rights & Social Issues",
+          "Immigration",
+          "Defense & National Security",
+          "Foreign Policy",
+          "Government Operations & Reform"
+        ],
+        "some": []
+      },
+      "anchor_examples": []
+    },
+    {
+      "id": "economic",
+      "name": "Economic System",
+      "tier": "core",
+      "source": "llm",
+      "computed": false,
+      "negative_pole": {
+        "label": "Collective / Public",
+        "description": "Public provision, regulation of markets, and redistribution."
+      },
+      "positive_pole": {
+        "label": "Market / Private",
+        "description": "Private provision, deregulation, and market-set outcomes."
+      },
+      "scoring_rule": "Score the mechanism a YES vote uses to achieve its goal: public vs. private provision, degree of market regulation, redistribution. Do not score the size of spending here.",
+      "boundary_rules": [
+        "economic is the mechanism (public vs. private provision, regulation, redistribution); fiscal is the net size of spending or deficit. A deficit-financed tax cut is market (+) on economic and expansion (-) on fiscal. A defense spending increase is neutral on economic.",
+        "Tariffs, trade deals, and domestic-content rules are scored on trade only, not on economic."
+      ],
+      "typical_categories": {
+        "most": [
+          "Economy & Finance",
+          "Labor & Employment",
+          "Healthcare",
+          "Education",
+          "Infrastructure & Transportation",
+          "Environment & Energy",
+          "Science & Technology",
+          "Agriculture & Rural Issues"
+        ],
+        "some": [
+          "Budget & Appropriations",
+          "Criminal Justice",
+          "Immigration",
+          "Defense & National Security"
+        ]
+      },
+      "anchor_examples": [
+        {
+          "description": "A bill creating a public health insurance option",
+          "position": -0.8
+        },
+        {
+          "description": "A bill deregulating banks or privatizing a public service",
+          "position": 0.8
+        }
+      ]
+    },
+    {
+      "id": "fiscal",
+      "name": "Fiscal",
+      "tier": "core",
+      "source": "llm",
+      "computed": false,
+      "negative_pole": {
+        "label": "Spending Expansion",
+        "description": "Increases net federal spending or deficits."
+      },
+      "positive_pole": {
+        "label": "Fiscal Restraint",
+        "description": "Cuts net federal spending or reduces deficits."
+      },
+      "scoring_rule": "Score the net effect of a YES vote on federal spending and deficits, regardless of what the money is spent on or how it is delivered.",
+      "boundary_rules": [
+        "fiscal is the net size of spending or deficit; economic is the mechanism. A deficit-financed tax cut is expansion (-) on fiscal and market (+) on economic."
+      ],
+      "typical_categories": {
+        "most": [
+          "Economy & Finance",
+          "Budget & Appropriations",
+          "Healthcare",
+          "Education",
+          "Infrastructure & Transportation",
+          "Agriculture & Rural Issues",
+          "Defense & National Security"
+        ],
+        "some": [
+          "Labor & Employment",
+          "Environment & Energy",
+          "Science & Technology",
+          "Criminal Justice",
+          "Immigration",
+          "Foreign Policy"
+        ]
+      },
+      "anchor_examples": [
+        {
+          "description": "An omnibus package with large unpaid-for spending increases",
+          "position": -0.9
+        },
+        {
+          "description": "A rescissions package or balanced-budget measure",
+          "position": 0.8
+        }
+      ]
+    },
+    {
+      "id": "state_power",
+      "name": "State Power",
+      "tier": "core",
+      "source": "llm",
+      "computed": false,
+      "negative_pole": {
+        "label": "Libertarian",
+        "description": "Limits coercion, surveillance, and punishment by the state."
+      },
+      "positive_pole": {
+        "label": "Authoritarian",
+        "description": "Expands coercion, surveillance, or punishment by the state."
+      },
+      "scoring_rule": "Score how much coercive, surveillance, or punitive power a YES vote gives the state over people under U.S. jurisdiction.",
+      "boundary_rules": [
+        "state_power is power over people under U.S. jurisdiction; security is posture toward foreign states and actors. FISA 702 can load on both.",
+        "state_power is how much coercion the state uses; social is which norms are promoted. A federal mandate for diversity training is progressive (-) on social and authoritarian (+) on state_power."
+      ],
+      "typical_categories": {
+        "most": [
+          "Science & Technology",
+          "Criminal Justice",
+          "Civil Rights & Social Issues",
+          "Immigration",
+          "Defense & National Security"
+        ],
+        "some": [
+          "Healthcare",
+          "Education",
+          "Government Operations & Reform"
+        ]
+      },
+      "anchor_examples": [
+        {
+          "description": "A bill requiring warrants for government access to Americans' data",
+          "position": -0.8
+        },
+        {
+          "description": "A bill expanding warrantless surveillance or mandatory minimum sentences",
+          "position": 0.8
+        }
+      ]
+    },
+    {
+      "id": "social",
+      "name": "Social",
+      "tier": "core",
+      "source": "llm",
+      "computed": false,
+      "negative_pole": {
+        "label": "Progressive",
+        "description": "Promotes newer or more inclusive social norms."
+      },
+      "positive_pole": {
+        "label": "Traditional",
+        "description": "Promotes established or traditional social norms."
+      },
+      "scoring_rule": "Score which social norms a YES vote promotes, independent of how forcefully the state enforces them.",
+      "boundary_rules": [
+        "social is which norms are promoted; state_power is how much coercion the state uses. They can disagree."
+      ],
+      "typical_categories": {
+        "most": [
+          "Healthcare",
+          "Education",
+          "Civil Rights & Social Issues"
+        ],
+        "some": [
+          "Science & Technology",
+          "Criminal Justice",
+          "Immigration",
+          "Defense & National Security"
+        ]
+      },
+      "anchor_examples": [
+        {
+          "description": "A bill protecting same-sex marriage or expanding anti-discrimination coverage",
+          "position": -0.8
+        },
+        {
+          "description": "A bill restricting abortion or protecting religious exemptions",
+          "position": 0.8
+        }
+      ]
+    },
+    {
+      "id": "security",
+      "name": "Security Posture",
+      "tier": "core",
+      "source": "llm",
+      "computed": false,
+      "negative_pole": {
+        "label": "Restraint / Dovish",
+        "description": "Reduces force, defense spending, or confrontation with foreign rivals."
+      },
+      "positive_pole": {
+        "label": "Hawkish",
+        "description": "Increases force, defense spending, or confrontation with foreign rivals."
+      },
+      "scoring_rule": "Score posture toward foreign states and actors: use of force, defense spending, and confrontational measures such as sanctions, export controls, foreign-ownership bans, and app bans.",
+      "boundary_rules": [
+        "security is force and confrontation; global is participation in institutions, treaties, and cooperation. NATO funding is hawkish (+) and multilateral (-).",
+        "security is posture toward foreign states and actors; state_power is power over people under U.S. jurisdiction."
+      ],
+      "typical_categories": {
+        "most": [
+          "Science & Technology",
+          "Defense & National Security",
+          "Foreign Policy"
+        ],
+        "some": [
+          "Economy & Finance",
+          "Budget & Appropriations",
+          "Agriculture & Rural Issues",
+          "Immigration"
+        ]
+      },
+      "anchor_examples": [
+        {
+          "description": "A war powers resolution ending U.S. involvement in a conflict",
+          "position": -0.8
+        },
+        {
+          "description": "A bill banning a foreign-owned app or sanctioning a rival state",
+          "position": 0.7
+        }
+      ]
+    },
+    {
+      "id": "trade",
+      "name": "Trade",
+      "tier": "core",
+      "source": "llm",
+      "computed": false,
+      "negative_pole": {
+        "label": "Free Trade",
+        "description": "Lowers tariffs and barriers to trade."
+      },
+      "positive_pole": {
+        "label": "Protectionist",
+        "description": "Raises tariffs or barriers to protect domestic industry."
+      },
+      "scoring_rule": "Score the effect of a YES vote on barriers to cross-border trade: tariffs, quotas, trade agreements, and domestic-content rules.",
+      "boundary_rules": [
+        "Tariffs, trade deals, and domestic-content rules are scored on trade only. Do not also score them on economic."
+      ],
+      "typical_categories": {
+        "most": [
+          "Economy & Finance",
+          "Agriculture & Rural Issues",
+          "Foreign Policy"
+        ],
+        "some": [
+          "Labor & Employment",
+          "Infrastructure & Transportation",
+          "Science & Technology"
+        ]
+      },
+      "anchor_examples": [
+        {
+          "description": "A bill approving a free trade agreement or disapproving new tariffs",
+          "position": -0.8
+        },
+        {
+          "description": "A bill imposing broad tariffs or buy-American requirements",
+          "position": 0.8
+        }
+      ]
+    },
+    {
+      "id": "global",
+      "name": "Global Engagement",
+      "tier": "secondary",
+      "source": "llm",
+      "computed": false,
+      "negative_pole": {
+        "label": "Multilateral",
+        "description": "Deeper participation in international institutions, treaties, and cooperation."
+      },
+      "positive_pole": {
+        "label": "Sovereigntist",
+        "description": "Preserves national autonomy and limits international commitments."
+      },
+      "scoring_rule": "Score participation in international institutions, treaties, and cooperative arrangements, not the use of force.",
+      "boundary_rules": [
+        "global is participation in institutions and cooperation; security is force and confrontation. NATO funding is hawkish (+) and multilateral (-)."
+      ],
+      "typical_categories": {
+        "most": [
+          "Environment & Energy",
+          "Foreign Policy"
+        ],
+        "some": [
+          "Economy & Finance",
+          "Healthcare",
+          "Immigration",
+          "Defense & National Security"
+        ]
+      },
+      "anchor_examples": [
+        {
+          "description": "A bill rejoining an international climate or health agreement",
+          "position": -0.8
+        },
+        {
+          "description": "A bill withdrawing from an international organization",
+          "position": 0.8
+        }
+      ]
+    },
+    {
+      "id": "institutional",
+      "name": "Institutional",
+      "tier": "core",
+      "source": "computed",
+      "computed": true,
+      "negative_pole": {
+        "label": "Establishment",
+        "description": "Votes with party leadership."
+      },
+      "positive_pole": {
+        "label": "Insurgent",
+        "description": "Frequently defects from party leadership."
+      },
+      "scoring_rule": "Computed from roll call votes, never scored by an LLM. Weighted rate at which a member votes against their party's leadership position, mapped to -1..1.",
+      "boundary_rules": [
+        "institutional is whether the member voted with party leadership; executive_power is what a bill does to branch powers. They are unrelated mechanisms."
+      ],
+      "typical_categories": {
+        "most": [],
+        "some": []
+      },
+      "anchor_examples": []
+    },
+    {
+      "id": "executive_power",
+      "name": "Branch Power",
+      "tier": "optional",
+      "source": "llm",
+      "computed": false,
+      "negative_pole": {
+        "label": "Legislative Checks",
+        "description": "Strengthens Congress's checks on the executive branch."
+      },
+      "positive_pole": {
+        "label": "Executive Deference",
+        "description": "Expands or defers to executive authority."
+      },
+      "scoring_rule": "Score what a YES vote does to the balance of power between Congress and the executive branch: war, tariff, and spending authority, agency discretion, executive orders.",
+      "boundary_rules": [
+        "executive_power is what the bill does to branch powers; institutional is whether the member voted with party leadership. Unrelated mechanisms."
+      ],
+      "typical_categories": {
+        "most": [
+          "Defense & National Security",
+          "Government Operations & Reform"
+        ],
+        "some": [
+          "Economy & Finance",
+          "Budget & Appropriations",
+          "Environment & Energy",
+          "Immigration",
+          "Foreign Policy"
+        ]
+      },
+      "anchor_examples": [
+        {
+          "description": "A bill requiring congressional approval for emergency tariffs",
+          "position": -0.8
+        },
+        {
+          "description": "A bill delegating broad discretionary authority to an agency or the President",
+          "position": 0.7
+        }
+      ]
+    },
+    {
+      "id": "federalism",
+      "name": "Federalism",
+      "tier": "optional",
+      "source": "llm",
+      "computed": false,
+      "negative_pole": {
+        "label": "Centralized",
+        "description": "Shifts authority to the federal government."
+      },
+      "positive_pole": {
+        "label": "Decentralized",
+        "description": "Shifts authority to states and localities."
+      },
+      "scoring_rule": "Score where a YES vote places decision-making authority between the federal government and the states and localities.",
+      "boundary_rules": [],
+      "typical_categories": {
+        "most": [
+          "Education",
+          "Government Operations & Reform"
+        ],
+        "some": [
+          "Healthcare",
+          "Infrastructure & Transportation",
+          "Environment & Energy",
+          "Criminal Justice"
+        ]
+      },
+      "anchor_examples": [
+        {
+          "description": "A bill setting national standards that preempt state law",
+          "position": -0.8
+        },
+        {
+          "description": "A bill block-granting a federal program to the states",
+          "position": 0.8
+        }
+      ]
+    }
+  ]
+}

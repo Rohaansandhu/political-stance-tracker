@@ -1,5 +1,5 @@
 # United States Political Stance Tracker
-Analyzes voting records to show where US Congress Members stand on major political issues and spectrums. Built upon the amazing tools of [unitedstates/congress](https://github.com/unitedstates/congress).
+Analyzes voting records to show where US Congress Members stand on major political issues and ideological axes. Built upon the amazing tools of [unitedstates/congress](https://github.com/unitedstates/congress).
 
 If you're curious about the role of LLMs in legislation summaries and possible political analysis, I'd highly recommend checking out this paper from 2024 [political-llm.org](https://political-llm.org/). Another great research piece was produced last May, discussing an LLM-driven framework for scaling Japanese parliamentary members using their political speeches [KOKKAI DOC](https://arxiv.org/pdf/2505.07118).
 
@@ -118,14 +118,22 @@ Options:
 
 Output: MongoDB bill_analyses collection
 
-### 4. Calculate Member Ideology
-Processes all legislators and calculates ideology scores based on their voting records and bill analyses. Please specify model (required) and schema version of the bill analyses you want to use.
+### 3b. Generate Bill Axis Analyses
+Categories are issue topics; **axes** are viewpoints that cut across them (see `political_definitions/political_axes.json`). This is a separate LLM pass over bills that already have a category analysis from step 3 (same `MODEL`), so category analyses never need regenerating when axes change.
 ```bash
-python3 src/calc_member_ideology.py [--model model] [--schema schema] [--congress congress] [--chamber chamber] [--bill_type type1 type2...]
+python3 src/generate_axis_analysis.py [--force] [--numOfBills num] [--delay seconds]
+```
+Output: MongoDB bill_axis_analyses collection (keyed by bill_id + model + axis schema version). The `institutional` axis is not scored here; it is computed from roll calls in step 4. Run `python3 src/db/db_utils.py` once to create the collection's unique index.
+
+### 4. Calculate Member Ideology
+Processes all legislators and calculates ideology scores based on their voting records and bill analyses. Please specify model (required) and schema version of the bill analyses you want to use. Profiles contain category scores plus an `axes` entry per axis (score, bill count, per-category breakdown, within-party z-score). If no axis analyses exist yet, profiles only get category scores.
+```bash
+python3 src/calc_member_ideology.py [--model model] [--schema schema] [--axis_schema axis_schema] [--congress congress] [--chamber chamber] [--bill_type type1 type2...]
 ```
 Options:
 - `--model`: Specify the model to analyze data from
 - `--schema`: Specify the schema version to analyze data from (optional, will default to latest)
+- `--axis_schema`: Specify the axis schema version to analyze data from (optional, will default to latest)
 - `--congress`: (Optional) Specify the congress
 - `--chamber`: (Optional) Specify the chamber (house, senate)
 - `--bill_type`: (Optional) Specify one or more bill types
@@ -148,6 +156,21 @@ python3 src/create_rankings.py [--spec_hash spec_hash]
 ```
 Options:
 - `--spec_hash`: (REQUIRED) Specify the specific legislator profiles to make plots with
+
+### 7. Validate Axes
+Checks that the axes are worth building on: axis correlations, PCA on the member x axis matrix, known cross-party votes (`political_definitions/validation_bills.json`), inter-model agreement, and observed axis x category applicability. Results print and are saved to `data/validation/<spec_hash>/`.
+```bash
+python3 src/validate_axes.py --spec_hash spec_hash [--compare_models modelA modelB]
+```
+
+### Institutional axis
+`python3 src/calc_institutional.py [--congress num] [--chamber house|senate]` prints the most and least party-loyal members. It is a sanity check; step 4 runs the same calculation.
+
+### Syncing to the cloud DB
+`src/cloud_db_updater.py` is generic. To sync axis analyses:
+```bash
+python3 src/cloud_db_updater.py --local_collection bill_axis_analyses --cloud_collection bill_axis_analyses --key_fields bill_id,model,axis_schema_version
+```
 
 ## Data Output
 All outputs are stored in MongoDB or the generated `data/` folder.

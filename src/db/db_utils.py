@@ -27,6 +27,14 @@ def ensure_indexes():
         [("bill_id", ASCENDING), ("model", ASCENDING), ("schema_version", DESCENDING)],
         unique=True,
     )
+    db.bill_axis_analyses.create_index(
+        [
+            ("bill_id", ASCENDING),
+            ("model", ASCENDING),
+            ("axis_schema_version", DESCENDING),
+        ],
+        unique=True,
+    )
     db.legislator_profiles.create_index(
         [
             ("member_id", ASCENDING),

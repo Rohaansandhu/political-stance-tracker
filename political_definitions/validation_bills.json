@@ -1,0 +1,44 @@
+{
+  "cases": [
+    {
+      "label": "FISA 702 reauthorization (RISAA)",
+      "bill_id": "hr7888-118",
+      "expected": { "state_power": 1 }
+    },
+    {
+      "label": "Syria war powers resolution",
+      "bill_id": "sjres51-118",
+      "expected": { "security": -1, "executive_power": -1 }
+    },
+    {
+      "label": "Iran war powers resolution",
+      "bill_id": "sjres59-119",
+      "expected": { "security": -1, "executive_power": -1 }
+    },
+    {
+      "label": "Tariff disapproval: global tariffs emergency",
+      "bill_id": "sjres49-119",
+      "expected": { "trade": -1, "executive_power": -1 }
+    },
+    {
+      "label": "Tariff disapproval: Canada duties emergency",
+      "bill_id": "sjres37-119",
+      "expected": { "trade": -1, "executive_power": -1 }
+    },
+    {
+      "label": "Debt limit deal (Fiscal Responsibility Act)",
+      "bill_id": "hr3746-118",
+      "expected": { "fiscal": 1 }
+    },
+    {
+      "label": "Ukraine supplemental appropriations",
+      "bill_id": "hr8035-118",
+      "expected": { "security": 1, "fiscal": -1 }
+    },
+    {
+      "label": "Israel supplemental appropriations",
+      "bill_id": "hr8034-118",
+      "expected": { "security": 1, "fiscal": -1 }
+    }
+  ]
+}

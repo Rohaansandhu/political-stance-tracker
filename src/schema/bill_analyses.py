@@ -33,3 +33,12 @@ class BillAnalysis(BaseModel):
     bill_summary: BillSummary
     political_categories: PoliticalCategories
     voting_analysis: VotingAnalysis
+
+class AxisScore(BaseModel):
+    axis: str  # id from political_axes.json, never a computed axis such as "institutional"
+    position: float  # -1..1, direction of a YES vote
+    relevance: float  # 0..1
+    reasoning: str
+
+class AxisAnalysis(BaseModel):
+    axis_scores: list[AxisScore]

@@ -58,7 +58,7 @@ def estimate_category_ideology(
     votes, bill_scores, impact_scores=None, prior_mean=0, prior_var=1
 ):
     """
-    Estimate ideology for a given category (spectrum).
+    Estimate ideology for a given category or axis.
     votes: list of 0/1
     bill_scores: list of partisan scores for those bills
     impact_scores: optional list of 0-1 impact weights
@@ -152,6 +152,23 @@ def reliability_adjustment(past_errors, decay=0.9):
 def ideology_similarity(ideo_a, ideo_b):
     """Return similarity (1 - distance/2) for ideology values in [-1, 1]."""
     return 1 - abs(ideo_a - ideo_b) / 2
+
+
+def within_group_zscores(values):
+    """
+    Z-score each value against the other values in its group (e.g. one party).
+    Returns a list of floats aligned with `values`, or None when the group is too
+    small or has no spread, since a z-score would be meaningless.
+    """
+    arr = np.array(values, dtype=float)
+    if len(arr) < 2:
+        return [None] * len(arr)
+
+    std = arr.std()
+    if std == 0:
+        return [None] * len(arr)
+
+    return [float(z) for z in (arr - arr.mean()) / std]
 
 
 def sigmoid_transform(x, midpoint=0, steepness=1):

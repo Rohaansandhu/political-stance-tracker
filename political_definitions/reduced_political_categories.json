@@ -2,38 +2,51 @@
   "political_categories": [
     {
       "name": "Economy & Finance",
+      "scope": "Bills about taxation, business and corporate regulation, financial markets, monetary policy, and trade.",
       "conservative_view": "Free markets, lower taxes, minimal regulation, fiscal responsibility",
       "liberal_view": "Government regulation, progressive taxation, consumer protections, address inequality",
       "subcategories": [
-        { 
+        {
           "name": "Taxes",
+          "scope": "Income, corporate, estate, and wealth tax policy; tax credits and deductions.",
           "conservative_view": "Lower taxes stimulate growth and reduce government size",
           "liberal_view": "Progressive taxation funds public services and reduces inequality"
         },
-        { 
+        {
           "name": "Business Regulation",
+          "scope": "Antitrust, corporate governance, consumer protection, and market concentration.",
           "conservative_view": "Minimal regulation allows innovation naturally",
           "liberal_view": "Strong regulation prevents monopoly abuse and protects consumers"
         },
-        { 
+        {
           "name": "Financial Markets & Monetary Policy",
+          "scope": "Securities and banking regulation, the Federal Reserve, crypto, and inflation control.",
           "conservative_view": "Sound money, price stability, light-touch capital regulation",
           "liberal_view": "Strong Wall Street oversight prevents fraud and systemic risk"
+        },
+        {
+          "name": "Trade & Tariffs",
+          "scope": "Tariffs, trade agreements, import and export rules, and trade enforcement.",
+          "conservative_view": "Aggressive tariffs to protect domestic manufacturing",
+          "liberal_view": "Free trade benefits all but requires strict labor standards"
         }
       ]
     },
     {
       "name": "Budget & Appropriations",
+      "scope": "Budget resolutions, appropriations bills, continuing resolutions, the debt limit, and rescissions.",
       "conservative_view": "Fiscal discipline, balanced budgets, limited spending",
       "liberal_view": "Strategic investment, social programs, less deficit concern",
       "subcategories": [
-        { 
+        {
           "name": "Debt & Deficit",
+          "scope": "Debt ceiling, deficit reduction measures, and rescissions.",
           "conservative_view": "Reduce debt, strict spending cuts",
           "liberal_view": "Debt is acceptable for productive investments"
         },
-        { 
+        {
           "name": "Appropriations",
+          "scope": "Annual and omnibus appropriations, continuing resolutions, and supplemental spending.",
           "conservative_view": "Streamlined funding, strict oversight to eliminate waste",
           "liberal_view": "Adequate funding for comprehensive government services"
         }
@@ -41,21 +54,25 @@
     },
     {
       "name": "Labor & Employment",
+      "scope": "Worker protections, union rights, wages, and workplace conditions.",
       "conservative_view": "Market forces determine wages, right-to-work laws",
       "liberal_view": "Strong unions, living wage laws, robust worker safety nets",
       "subcategories": [
-        { 
+        {
           "name": "Unions & Collective Bargaining",
+          "scope": "Organized labor rights, strike protections, right-to-work laws.",
           "conservative_view": "Protect right-to-work, voluntary unionization",
           "liberal_view": "Strong unions are essential to balance corporate power"
         },
-        { 
+        {
           "name": "Wages & Benefits",
+          "scope": "Minimum wage, paid leave, overtime rules.",
           "conservative_view": "Market-driven wages, avoid mandated benefits",
           "liberal_view": "Federal minimum wage increases, mandated paid leave"
         },
-        { 
+        {
           "name": "Workplace Safety & Standards",
+          "scope": "OSHA regulations, discrimination in employment, worker classification.",
           "conservative_view": "Flexible labor arrangements, avoid burdensome compliance",
           "liberal_view": "Strict enforcement, prevent misclassification of workers"
         }
@@ -63,26 +80,31 @@
     },
     {
       "name": "Healthcare",
+      "scope": "Healthcare coverage, costs, public health, and health regulation.",
       "conservative_view": "Market solutions, personal choice, competition",
       "liberal_view": "Universal access, government affordability role",
       "subcategories": [
-        { 
+        {
           "name": "Coverage Models",
+          "scope": "Universal healthcare vs private insurance systems.",
           "conservative_view": "Private insurance provides better quality and choice",
           "liberal_view": "Universal healthcare ensures access for everyone"
         },
-        { 
+        {
           "name": "Costs & Access",
+          "scope": "Drug pricing, insurance affordability, billing transparency.",
           "conservative_view": "Competition reduces costs naturally; avoid price controls",
           "liberal_view": "Government intervention is needed to control excessive pricing"
         },
-        { 
+        {
           "name": "Public & Mental Health",
+          "scope": "Pandemic response, vaccinations, suicide prevention, parity laws.",
           "conservative_view": "Individual choice, private sector innovation",
           "liberal_view": "Government coordination, adequate state funding"
         },
-        { 
+        {
           "name": "Reproductive Health",
+          "scope": "Abortion policy, contraception access, maternal care.",
           "conservative_view": "Protect unborn life, religious freedom for providers",
           "liberal_view": "Women's bodily autonomy, universal reproductive choice"
         }
@@ -90,21 +112,25 @@
     },
     {
       "name": "Education",
+      "scope": "Schools, universities, student support, and education policy.",
       "conservative_view": "School choice, parental rights, local control",
       "liberal_view": "Equitable public funding, teacher support, inclusion",
       "subcategories": [
-        { 
+        {
           "name": "K-12 Education",
+          "scope": "Funding, curriculum standards, teacher pay.",
           "conservative_view": "Local control, merit pay, focus on core subjects",
           "liberal_view": "Adequate funding, inclusive curriculum, professional compensation"
         },
-        { 
+        {
           "name": "Higher Education",
+          "scope": "Student loans, tuition, public university funding.",
           "conservative_view": "Personal responsibility for costs, reduce subsidies",
           "liberal_view": "Accessible through public funding and loan forgiveness"
         },
-        { 
+        {
           "name": "School Choice",
+          "scope": "Charter schools, vouchers, homeschooling policy.",
           "conservative_view": "Competition improves quality, funding follows the student",
           "liberal_view": "Fully support public schools, avoid diverting funds to private entities"
         }
@@ -112,21 +138,25 @@
     },
     {
       "name": "Infrastructure & Transportation",
+      "scope": "Physical and digital infrastructure, transportation systems, and public utilities.",
       "conservative_view": "Private sector efficiency, user fees, core infrastructure",
       "liberal_view": "Major public investment, economic stimulus, equitable access",
       "subcategories": [
-        { 
+        {
           "name": "Transportation",
+          "scope": "Roads, transit systems, aviation, maritime.",
           "conservative_view": "User fees, private sector, focus on roads and highways",
           "liberal_view": "Public investment in mass transit and sustainable options"
         },
-        { 
+        {
           "name": "Digital Infrastructure",
+          "scope": "Broadband expansion, rural connectivity.",
           "conservative_view": "Private sector expansion, market competition drives access",
           "liberal_view": "Universal access ensured through heavy government investment"
         },
-        { 
+        {
           "name": "Public Works & Utilities",
+          "scope": "Water systems, electricity grid, waste management.",
           "conservative_view": "Private utility management, user fees, market mechanisms",
           "liberal_view": "Public utilities ensure universal access and affordability"
         }
@@ -134,26 +164,31 @@
     },
     {
       "name": "Environment & Energy",
+      "scope": "Natural resources, energy production, climate change, conservation, and disaster management.",
       "conservative_view": "Economic growth, energy independence, market solutions",
       "liberal_view": "Aggressive climate action, renewables, environmental protection",
       "subcategories": [
-        { 
+        {
           "name": "Climate Policy",
+          "scope": "Emissions limits, carbon pricing, green incentives.",
           "conservative_view": "Market technological solutions, avoid economic disruption",
           "liberal_view": "Urgent regulation, carbon pricing, rapid transition mandates"
         },
-        { 
+        {
           "name": "Energy Production",
+          "scope": "Fossil fuels, nuclear power, renewable energy.",
           "conservative_view": "All-of-the-above strategy including domestic fossil fuels",
           "liberal_view": "Rapid transition to renewable sources, phase out fossil fuels"
         },
-        { 
+        {
           "name": "Conservation & Water",
+          "scope": "Public lands, wildlife, water rights, pollution control.",
           "conservative_view": "Balance use for economic benefit, respect property rights",
           "liberal_view": "Strong protection, prioritize conservation over resource extraction"
         },
-        { 
+        {
           "name": "Disaster Management",
+          "scope": "FEMA programs, hurricane/wildfire response.",
           "conservative_view": "State local response, personal responsibility for preparedness",
           "liberal_view": "Strong federal response, fund climate change adaptation"
         }
@@ -161,26 +196,31 @@
     },
     {
       "name": "Science & Technology",
+      "scope": "Digital platforms, data security, artificial intelligence, scientific research, and space.",
       "conservative_view": "Light regulation, innovation leadership, free speech online",
       "liberal_view": "Strong regulation, data privacy, algorithmic accountability",
       "subcategories": [
-        { 
+        {
           "name": "Data Privacy & Cybersecurity",
+          "scope": "Corporate and consumer data protection and cybersecurity. Government surveillance belongs in Civil Rights & Social Issues > Government Surveillance & Privacy.",
           "conservative_view": "Market solutions, private partnerships without heavy burdens",
           "liberal_view": "Strong federal data protection laws, strict cyber mandates"
         },
-        { 
+        {
           "name": "Tech Regulation & Speech",
+          "scope": "Online content moderation, platform liability.",
           "conservative_view": "Protect free speech, avoid censorship by platforms",
           "liberal_view": "Platform responsibility to combat harm and misinformation"
         },
-        { 
+        {
           "name": "Emerging Tech & AI",
+          "scope": "Artificial intelligence, biotech, intellectual property.",
           "conservative_view": "Minimal regulation to maintain US technological leadership",
           "liberal_view": "Proactive regulation to ensure safety and prevent bias"
         },
-        { 
+        {
           "name": "Space & Scientific Research",
+          "scope": "NASA programs, federal R&D funding.",
           "conservative_view": "Space commercialization, defense-focused basic research",
           "liberal_view": "Robust public funding for institutions, peaceful exploration"
         }
@@ -188,21 +228,25 @@
     },
     {
       "name": "Agriculture & Rural Issues",
+      "scope": "Farmers, food safety, and rural economies.",
       "conservative_view": "Farming autonomy, minimal regulation, market solutions",
       "liberal_view": "Sustainability, worker protections, support small farms",
       "subcategories": [
-        { 
+        {
           "name": "Farm Policy",
+          "scope": "Subsidies, crop insurance, agribusiness regulation.",
           "conservative_view": "Market programs, reduce regulatory burden on family farms",
           "liberal_view": "Restructure subsidies to support sustainability and small farms"
         },
-        { 
+        {
           "name": "Food Safety",
+          "scope": "Labeling, inspection, GMO policy.",
           "conservative_view": "Science-based safety, agricultural innovation, minimal labeling",
           "liberal_view": "Strong FDA/USDA oversight, aggressive consumer right-to-know"
         },
-        { 
+        {
           "name": "Rural Development",
+          "scope": "Infrastructure and healthcare access for rural areas.",
           "conservative_view": "Market solutions, empower local community autonomy",
           "liberal_view": "Targeted federal investment to ensure equitable healthcare and access"
         }
@@ -210,21 +254,25 @@
     },
     {
       "name": "Criminal Justice",
+      "scope": "Criminal law, sentencing, policing, prisons, reentry, and drug enforcement.",
       "conservative_view": "Tough on crime, strong enforcement, victims' rights",
       "liberal_view": "Reform system, rehabilitation, reduce mass incarceration",
       "subcategories": [
-        { 
+        {
           "name": "Sentencing & Punishment",
+          "scope": "Prison terms, mandatory minimums, death penalty.",
           "conservative_view": "Serious punishment deters crime and incapacitates offenders",
           "liberal_view": "Reduce sentences, eliminate mandatory minimums"
         },
-        { 
+        {
           "name": "Policing & Law Enforcement",
+          "scope": "Police funding, tactics, accountability.",
           "conservative_view": "Support and fully fund police, maintain qualified immunity",
           "liberal_view": "Reform through strict accountability and independent oversight"
         },
-        { 
+        {
           "name": "Rehabilitation & Drug Policy",
+          "scope": "Prison programs, decriminalization, treatment.",
           "conservative_view": "Punishment is primary, maintain strong drug enforcement",
           "liberal_view": "Decriminalize minor offenses, treat addiction as a health issue"
         }
@@ -232,26 +280,31 @@
     },
     {
       "name": "Civil Rights & Social Issues",
+      "scope": "Civil rights, anti-discrimination, family and religious issues, government surveillance and privacy, and tribal affairs.",
       "conservative_view": "Traditional values, colorblind equality, religious freedom",
       "liberal_view": "Active social justice, equity, protect marginalized groups",
       "subcategories": [
-        { 
+        {
           "name": "Civil Rights & Equity",
+          "scope": "Anti-discrimination laws, affirmative action.",
           "conservative_view": "Equal opportunity and colorblind legal treatment",
           "liberal_view": "Active measures needed to combat systemic discrimination"
         },
-        { 
+        {
           "name": "Family, Culture & Religion",
+          "scope": "Marriage policy, gender identity, religious liberties.",
           "conservative_view": "Traditional family structures, robust religious exemptions",
           "liberal_view": "Marriage equality, LGBTQ+ rights, secular governance"
         },
-        { 
-          "name": "Privacy & Civil Liberties",
+        {
+          "name": "Government Surveillance & Privacy",
+          "scope": "Government data collection, warrants, and surveillance authorities. Corporate data privacy belongs in Science & Technology > Data Privacy & Cybersecurity; foreign intelligence operations belong in Defense & National Security > Intelligence & Counterterrorism.",
           "conservative_view": "Balance civil liberties with law enforcement and security needs",
           "liberal_view": "Robust privacy protections, absolute defense of individual rights"
         },
         {
           "name": "Tribal & Indigenous Affairs",
+          "scope": "Native American sovereignty, treaty rights, cultural preservation.",
           "conservative_view": "Balance tribal sovereignty with federal/state authority",
           "liberal_view": "Strictly honor treaties, strong support for self-determination"
         }
@@ -259,21 +312,25 @@
     },
     {
       "name": "Immigration",
+      "scope": "Border security, legal immigration, asylum, and refugee policy.",
       "conservative_view": "Strict enforcement, merit-based, robust border security",
       "liberal_view": "Humane system, pathways to citizenship, family unity",
       "subcategories": [
-        { 
+        {
           "name": "Border Security & Enforcement",
+          "scope": "Physical barriers, ICE operations, deportation.",
           "conservative_view": "Physical barriers, strict deportation laws to deter crossings",
           "liberal_view": "Smart border technology, limit interior ICE raids"
         },
-        { 
+        {
           "name": "Legal Immigration & Pathways",
+          "scope": "Visas, green cards, DACA, amnesty.",
           "conservative_view": "Skills-based system, oppose blanket amnesty",
           "liberal_view": "Permanent pathway to citizenship for undocumented populations"
         },
-        { 
+        {
           "name": "Asylum & Refugees",
+          "scope": "Humanitarian protection, asylum claims.",
           "conservative_view": "Tighten asylum rules, limit overall refugee admissions for security",
           "liberal_view": "Restore asylum processes, generous refugee admissions"
         }
@@ -281,21 +338,25 @@
     },
     {
       "name": "Defense & National Security",
+      "scope": "The military, veterans, intelligence, and homeland security.",
       "conservative_view": "Peace through strength, robust funding, decisive capability",
       "liberal_view": "Measured spending, focus on diplomacy and asymmetric threats",
       "subcategories": [
-        { 
+        {
           "name": "Military Readiness & Budget",
+          "scope": "Pentagon funding, weapons procurement.",
           "conservative_view": "Consistent defense spending increases for global supremacy",
           "liberal_view": "Audit the bloated budget, reallocate funds to domestic needs"
         },
-        { 
+        {
           "name": "Veterans Affairs",
+          "scope": "VA hospitals, military benefits.",
           "conservative_view": "Expand private healthcare choices to bypass VA wait times",
           "liberal_view": "Fully fund and staff the VA system as a public healthcare model"
         },
-        { 
+        {
           "name": "Intelligence & Counterterrorism",
+          "scope": "Foreign intelligence operations, the CIA and NSA, and homeland security operations.",
           "conservative_view": "Provide agencies broad authorities to prevent attacks",
           "liberal_view": "Strict congressional oversight to prevent rights violations"
         }
@@ -303,21 +364,19 @@
     },
     {
       "name": "Foreign Policy",
+      "scope": "Diplomacy, alliances and treaties, foreign aid, and sanctions.",
       "conservative_view": "America First, bilateral agreements, national interests",
       "liberal_view": "Multilateral cooperation, human rights, global stability",
       "subcategories": [
-        { 
+        {
           "name": "International Alliances & Treaties",
+          "scope": "NATO, the UN, and other international organizations and treaties, including climate accords.",
           "conservative_view": "Alliances must explicitly serve US interests and sovereignty",
           "liberal_view": "Strong alliances multiply influence and solve global crises"
         },
-        { 
-          "name": "Global Trade & Tariffs",
-          "conservative_view": "Aggressive tariffs to protect domestic manufacturing",
-          "liberal_view": "Free trade benefits all but requires strict labor standards"
-        },
-        { 
+        {
           "name": "Foreign Aid & Diplomacy",
+          "scope": "Humanitarian relief, State Department funding, diplomacy, and sanctions.",
           "conservative_view": "Highly restricted aid tied to direct strategic objectives",
           "liberal_view": "Robust diplomacy funding promotes stability and builds alliances"
         }
@@ -325,21 +384,25 @@
     },
     {
       "name": "Government Operations & Reform",
+      "scope": "Elections, campaign finance and ethics, and the structure and balance of government powers.",
       "conservative_view": "Limited federal power, originalism, election integrity",
       "liberal_view": "Democratic reforms, voting access, institutional accountability",
       "subcategories": [
-        { 
+        {
           "name": "Electoral Law & Voting",
+          "scope": "Voter ID, ballot access, gerrymandering.",
           "conservative_view": "Election integrity requires strict voter ID and state control",
           "liberal_view": "Expand access through federal standards and automatic registration"
         },
-        { 
+        {
           "name": "Campaign Finance & Ethics",
+          "scope": "PACs, political donations, lobbying rules.",
           "conservative_view": "Political spending is protected free speech",
           "liberal_view": "Aggressive reform to limit corporate influence, public financing"
         },
-        { 
-          "name": "Federalism & Executive Power",
+        {
+          "name": "Separation of Powers & Intergovernmental Relations",
+          "scope": "Agency authority, executive orders, war, tariff and spending authority, and federal-state relations.",
           "conservative_view": "Decentralize power to states, rein in the administrative state",
           "liberal_view": "Strong federal authority ensures equal protection nationwide"
         }
