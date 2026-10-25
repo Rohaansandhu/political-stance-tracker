@@ -1,3 +1,5 @@
+import copy
+
 from pydantic import BaseModel
 
 # Bill Summary may be removed in the future (since Library of Congress already writes this)
@@ -42,3 +44,63 @@ class AxisScore(BaseModel):
 
 class AxisAnalysis(BaseModel):
     axis_scores: list[AxisScore]
+
+
+# --- Structured Outputs (OpenAI strict JSON schema) ---
+
+def _make_strict(node):
+    """
+    Rewrite a pydantic JSON schema in place to meet OpenAI strict mode: every object
+    lists all its properties as required and forbids extras. Titles/defaults are dropped.
+    """
+    if isinstance(node, dict):
+        # Metadata keys are strings; a *property* named "title" holds a schema (dict)
+        for key in ("title", "default"):
+            if not isinstance(node.get(key), dict):
+                node.pop(key, None)
+        if "properties" in node:
+            node["additionalProperties"] = False
+            node["required"] = list(node["properties"])
+        for value in node.values():
+            _make_strict(value)
+    elif isinstance(node, list):
+        for item in node:
+            _make_strict(item)
+    return node
+
+
+def _response_format(name, schema):
+    return {
+        "type": "json_schema",
+        "json_schema": {"name": name, "strict": True, "schema": schema},
+    }
+
+
+def category_response_format(primary_names, subcategory_names):
+    """
+    Strict `response_format` for BillAnalysis. Category and subcategory names are enums,
+    so the model can't return a misspelled or invented name.
+    """
+    schema = _make_strict(BillAnalysis.model_json_schema())
+    defs = schema["$defs"]
+    category_schema = defs.pop("Category")
+
+    for field, def_name, names in (
+        ("primary_categories", "PrimaryCategory", primary_names),
+        ("subcategories", "SubCategory", subcategory_names),
+    ):
+        named = copy.deepcopy(category_schema)
+        named["properties"]["name"]["enum"] = list(names)
+        defs[def_name] = named
+        defs["PoliticalCategories"]["properties"][field]["items"] = {
+            "$ref": f"#/$defs/{def_name}"
+        }
+
+    return _response_format("bill_analysis", schema)
+
+
+def axis_response_format(axis_ids):
+    """Strict `response_format` for AxisAnalysis, with the axis id as an enum."""
+    schema = _make_strict(AxisAnalysis.model_json_schema())
+    schema["$defs"]["AxisScore"]["properties"]["axis"]["enum"] = list(axis_ids)
+    return _response_format("axis_analysis", schema)
