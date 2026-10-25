@@ -1,8 +1,15 @@
 import json
+from functools import lru_cache
 
 from analysis.definitions import llm_axes
-from analysis.llm_common import client, clean_json_response, truncate_bill_text
-from schema.bill_analyses import AxisAnalysis
+from analysis.llm_common import (
+    STRUCTURED_OUTPUTS,
+    analyze_with_retries,
+    clean_json_response,
+    is_truncated,
+    truncate_bill_text,
+)
+from schema.bill_analyses import AxisAnalysis, axis_response_format
 
 # Update after every change to the axis prompt or political_axes.json.
 # Separate from the category SCHEMA_VERSION so axes can be re-run without redoing categories.
@@ -22,6 +29,27 @@ Rules:
 - Judge only the content of the bill. Never infer a score from its sponsor or party.
 - Be objective and consider multiple political perspectives.
 """
+
+# Static instructions come first in the user message, with the bill last, so everything
+# before the category tags is an identical prefix across bills (OpenAI caches shared prefixes)
+USER_INSTRUCTIONS = """Please score the following bill on the ideological axes defined in the system message.
+
+For each relevant axis provide:
+- position: -1.0 to 1.0, the direction a YES vote pushes along the axis (0 = neutral or mixed)
+- relevance: 0.0 to 1.0, how central the axis is to the bill (1.0 = the main point of the bill)
+- reasoning: one or two sentences
+
+Output Format (STRICT JSON)
+{
+    "axis_scores": [{
+        "axis": "axis id exactly as given in the system message",
+        "position": -1.0 to 1.0,
+        "relevance": 0.0 to 1.0,
+        "reasoning": "string"
+    }]
+}
+
+CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON object."""
 
 
 def format_axis(axis):
@@ -45,41 +73,6 @@ def format_axis(axis):
     for example in axis["anchor_examples"]:
         lines.append(f'  Example: {example["description"]} -> {example["position"]}')
     return "\n".join(lines)
-
-
-def create_user_prompt(bill_text, category_tags, axes, retry_note=""):
-    axis_text = "\n\n".join(format_axis(a) for a in axes)
-    tags_text = ", ".join(category_tags) if category_tags else "(none)"
-
-    prompt = f"""Please score the following bill on the ideological axes below.
-
-AXES
-{axis_text}
-
-CATEGORY TAGS ALREADY ASSIGNED TO THIS BILL (context only):
-{tags_text}
-
-BILL TEXT:
-{bill_text}
-
-For each relevant axis provide:
-- position: -1.0 to 1.0, the direction a YES vote pushes along the axis (0 = neutral or mixed)
-- relevance: 0.0 to 1.0, how central the axis is to the bill (1.0 = the main point of the bill)
-- reasoning: one or two sentences
-
-Output Format (STRICT JSON)
-{{
-    "axis_scores": [{{
-        "axis": "axis id exactly as given above",
-        "position": -1.0 to 1.0,
-        "relevance": 0.0 to 1.0,
-        "reasoning": "string"
-    }}]
-}}
-
-CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON object."""
-
-    return prompt + retry_note
 
 
 def normalize_axis_scores(axis_scores, valid_ids):
@@ -111,9 +104,114 @@ def normalize_axis_scores(axis_scores, valid_ids):
     return scores, bad_ids
 
 
+@lru_cache(maxsize=None)
+def build_system_message(use_reduced=False):
+    """
+    System message with the axis definitions. Byte-identical for every bill (cached),
+    so providers can cache it as a shared prompt prefix. There is no reduced variant.
+    """
+    axis_text = "\n\n".join(format_axis(a) for a in llm_axes())
+    return f"{SYSTEM_PROMPT}\nAXES\n{axis_text}"
+
+
+def build_retry_note(retry_context):
+    """Corrective text appended to the user message after a failed attempt."""
+    error_type = retry_context["error_type"]
+
+    if error_type == "bad_axis":
+        valid_ids = ", ".join(sorted(a["id"] for a in llm_axes()))
+        return f"""
+
+RETRY ATTEMPT: Your previous response used axis ids that do not exist: {", ".join(retry_context["bad_names"])}.
+Use only these axis ids, spelled exactly: {valid_ids}."""
+
+    if error_type == "bad_format":
+        return """
+
+RETRY ATTEMPT: Your previous response had invalid JSON format and/or did not have the required fields.
+Return ONLY valid JSON in exactly the format specified."""
+
+    # Response was cut off by the output limit
+    if error_type == "length":
+        return """
+
+RETRY ATTEMPT: Your previous response was cut off before it finished.
+Keep every "reasoning" string to one sentence and return complete, valid JSON."""
+
+    return ""
+
+
+def build_messages(bill, use_reduced=False, retry_context=None):
+    """
+    Chat messages for scoring one bill. `use_reduced` is accepted for compatibility with
+    the category client, but axes have no reduced prompt.
+
+    Args:
+        bill (dict): {"bill_text", "category_tags"}
+        retry_context (dict): {"error_type", "previous_response", "bad_names"} after a failure
+    """
+    bill_text, _ = truncate_bill_text(bill["bill_text"])
+    tags_text = ", ".join(bill["category_tags"]) if bill["category_tags"] else "(none)"
+
+    user_message = f"""{USER_INSTRUCTIONS}
+
+CATEGORY TAGS ALREADY ASSIGNED TO THIS BILL (context only):
+{tags_text}
+
+BILL TEXT:
+{bill_text}"""
+    if retry_context:
+        user_message += build_retry_note(retry_context)
+
+    return [
+        {"role": "system", "content": build_system_message()},
+        {"role": "user", "content": user_message},
+    ]
+
+
+@lru_cache(maxsize=None)
+def get_response_format():
+    """Strict JSON schema for responses, or None when structured outputs aren't in use."""
+    if not STRUCTURED_OUTPUTS:
+        return None
+    return axis_response_format([a["id"] for a in llm_axes()])
+
+
+def parse_response(text):
+    """
+    Parse and validate a model response.
+
+    Returns:
+        (result, error_type, bad_names): error_type is None on success, otherwise
+        "bad_format" or "bad_axis" (with the unknown/computed axis ids).
+    """
+    try:
+        analysis = AxisAnalysis.model_validate(json.loads(clean_json_response(text.strip())))
+    except ValueError:
+        # JSONDecodeError and pydantic ValidationError are both ValueErrors
+        return None, "bad_format", []
+
+    valid_ids = {a["id"] for a in llm_axes()}
+    axis_scores, bad_ids = normalize_axis_scores(
+        [s.model_dump() for s in analysis.axis_scores], valid_ids
+    )
+    if bad_ids:
+        return None, "bad_axis", bad_ids
+
+    return {"axis_scores": axis_scores}, None, []
+
+
+def finalize(result, bill_truncated):
+    """Add metadata to a validated analysis."""
+    result["axis_schema_version"] = AXIS_SCHEMA_VERSION
+    result["bill_truncated"] = bill_truncated
+    return result
+
+
 def analyze_bill_axes(bill_text, category_tags, model, max_retries=4):
     """
-    Score a bill on every LLM-scored axis.
+    Score a bill on every LLM-scored axis (synchronously).
+    Batch mode (analysis/batch_runner.py) uses the same build_messages/parse_response/finalize.
 
     Args:
         bill_text (str): The text (or summary) of the bill
@@ -130,62 +228,14 @@ def analyze_bill_axes(bill_text, category_tags, model, max_retries=4):
     if not bill_text.strip():
         raise ValueError("Bill text cannot be empty")
 
-    bill_text, bill_truncated = truncate_bill_text(bill_text)
+    bill = {"bill_text": bill_text, "category_tags": category_tags}
+    bill_truncated = is_truncated(bill_text)
 
-    axes = llm_axes()
-    valid_ids = {a["id"] for a in axes}
-
-    retry_note = ""
-    last_error = None
-
-    for attempt in range(max_retries + 1):
-        user_prompt = create_user_prompt(bill_text, category_tags, axes, retry_note)
-
-        completion = client.chat.completions.create(
-            extra_body={},
-            model=model,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
-        response_content = completion.choices[0].message.content or ""
-
-        try:
-            result = json.loads(clean_json_response(response_content.strip()))
-            analysis = AxisAnalysis.model_validate(result)
-        except ValueError as e:
-            # JSONDecodeError and pydantic ValidationError are both ValueErrors
-            last_error = f"invalid JSON or missing required fields: {e}"
-            retry_note = f"""
-
-RETRY ATTEMPT: Your previous response had invalid JSON format and/or did not have the required fields.
-Return ONLY valid JSON in exactly the format specified."""
-            print(f"Axis analysis attempt {attempt + 1} failed ({last_error[:120]}), retrying...")
-            continue
-
-        axis_scores, bad_ids = normalize_axis_scores(
-            [s.model_dump() for s in analysis.axis_scores], valid_ids
-        )
-        if bad_ids:
-            last_error = f"unknown axis ids: {', '.join(bad_ids)}"
-            retry_note = f"""
-
-RETRY ATTEMPT: Your previous response used axis ids that do not exist: {', '.join(bad_ids)}.
-Use only these axis ids, spelled exactly: {', '.join(sorted(valid_ids))}."""
-            print(f"Axis analysis attempt {attempt + 1} failed ({last_error}), retrying...")
-            continue
-
-        if attempt > 0:
-            print(f"Successfully generated axis analysis on retry attempt {attempt}")
-
-        return {
-            "axis_scores": axis_scores,
-            "axis_schema_version": AXIS_SCHEMA_VERSION,
-            "bill_truncated": bill_truncated,
-        }
-
-    raise Exception(
-        f"Failed to generate a valid axis analysis after {max_retries + 1} attempts. "
-        f"Last error: {last_error}"
+    return analyze_with_retries(
+        model,
+        lambda use_reduced, retry_context: build_messages(bill, use_reduced, retry_context),
+        parse_response,
+        lambda result: finalize(result, bill_truncated),
+        response_format=get_response_format(),
+        max_retries=max_retries,
     )

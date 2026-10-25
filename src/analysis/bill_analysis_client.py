@@ -1,8 +1,17 @@
-from analysis.definitions import load_categories, load_reduced_categories
-from analysis.llm_common import client, clean_json_response, truncate_bill_text
-from schema.bill_analyses import BillAnalysis
 import json
+from functools import lru_cache
+
 from rapidfuzz import fuzz, process
+
+from analysis.definitions import load_categories, load_reduced_categories
+from analysis.llm_common import (
+    STRUCTURED_OUTPUTS,
+    analyze_with_retries,
+    clean_json_response,
+    is_truncated,
+    truncate_bill_text,
+)
+from schema.bill_analyses import BillAnalysis, category_response_format
 
 # Update Schema after every change to prompts/categories
 SCHEMA_VERSION = 5
@@ -13,7 +22,7 @@ You are an expert political analyst specializing in legislative classification.
 Your task is to analyze bills and determine:
 
 1. POLITICAL CATEGORIES: Classify the bill into relevant policy topics (e.g., healthcare, defense, immigration, etc.)
-- Only use categories provided in the user prompt
+- Only use categories provided below
 - A category is a topic. Use its scope to decide whether a bill belongs to it
 
 2. VOTING POSITION ANALYSIS: For both YES and NO votes, determine:
@@ -25,253 +34,225 @@ Provide your analysis in a structured format with clear reasoning for each class
 Be objective and consider multiple political perspectives.
 """
 
+# Static instructions come first in the user message, with the bill last, so everything
+# before the bill text is an identical prefix across bills (OpenAI caches long shared prefixes)
+USER_INSTRUCTIONS = """Please analyze the following bill and provide a comprehensive political classification.
 
-# TODO: Split up this function, clean more of the processing logic
+Please provide:
+1. Classify the bill into any relevant political categories and subcategories.
+   Each category is a topic described by its scope. Only use the categories provided in the system message. Do NOT create new ones.
+   Determine the impact on each relevant category using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
+   Rate the bill on how conservative/progressive it is within each category. The liberal_view and conservative_view
+   of each category are the two poles of that category's left-right scale. Use a scale of -1 to 1, where:
+    - -1 = fully aligned with the liberal_view
+    - 0 = neutral or mixed
+    - 1 = fully aligned with the conservative_view
+3. If a category is **not relevant**, omit it from the output.
+4. Analysis of what a YES vote represents politically
+5. Analysis of what a NO vote represents politically 
+
+Output Format (STRICT JSON)
+{
+    "political_categories": {
+        "primary_categories": [{
+        "name": "string",
+        "partisan_score": -1.0 to 1.0,
+        "impact_score": 0.0 to 1.0,
+        "reasoning": "string"
+        }],
+        "subcategories": [{
+        "name": "string",
+        "partisan_score": -1.0 to 1.0,
+        "impact_score": 0.0 to 1.0,
+        "reasoning": "string"
+        }]
+    },
+    "voting_analysis": {
+        "yes_vote": {
+        "political_position": "string",
+        "philosophy": "string", 
+        "stakeholder_support": ["array"],
+        "reasoning": "string"
+        },
+        "no_vote": {
+        "political_position": "string",
+        "philosophy": "string",
+        "stakeholder_support": ["array"], 
+        "reasoning": "string"
+        }
+    },
+    "bill_summary": {
+        "title": "string",
+        "key_provisions": ["array"]
+    }
+}
+
+CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON object."""
+
+
+@lru_cache(maxsize=None)
+def build_system_message(use_reduced=False):
+    """
+    System message with the category definitions. Byte-identical for every bill (cached),
+    so providers can cache it as a shared prompt prefix.
+    """
+    categories = load_reduced_categories() if use_reduced else load_categories()
+    definitions = json.dumps(categories, ensure_ascii=False, separators=(",", ":"))
+    return f"{SYSTEM_PROMPT}\nPOLITICAL CATEGORIES\n{definitions}"
+
+
+def build_retry_note(retry_context):
+    """Corrective text appended to the user message after a failed attempt."""
+    error_type = retry_context["error_type"]
+    previous = retry_context["previous_response"][:500]
+
+    # Category outside of defined primary_categories used
+    if error_type == "bad_category":
+        bad_categories = ", ".join(retry_context["bad_names"])
+        return f"""
+
+RETRY ATTEMPT: Your response included {bad_categories} in the primary_categories section, 
+but these categories are either subcategories, or misspellling of major categories:
+{previous}...
+
+In the primary_categories section, you MUST use only the top-level political categories defined, 
+and these categories must be spelled exactly as provided.
+
+Please revise your response by:
+Renaming the category name to its exact spelling or by
+Removing the bad category name from primary_categories and adding it to subcategories"""
+
+    # JSON format error
+    if error_type == "bad_format":
+        return f"""
+
+RETRY ATTEMPT: Your previous response had invalid JSON format and/or did not have the required fields:
+{previous}...
+
+Please fix the JSON syntax errors and return ONLY valid JSON."""
+
+    # Response was cut off by the output limit
+    if error_type == "length":
+        return """
+
+RETRY ATTEMPT: Your previous response was cut off before it finished.
+Keep every "reasoning" string to one or two sentences and return complete, valid JSON."""
+
+    return ""
+
+
+def build_messages(bill, use_reduced=False, retry_context=None):
+    """
+    Chat messages for analyzing one bill.
+
+    Args:
+        bill (dict): {"bill_text", "legislative_subjects", "top_subject"}
+        use_reduced (bool): Use the reduced category definitions (for context length errors)
+        retry_context (dict): {"error_type", "previous_response", "bad_names"} after a failure
+    """
+    bill_text, _ = truncate_bill_text(bill["bill_text"])
+    # Create a comma separated string, joining together all subjects
+    subjects_text = ", ".join(bill["legislative_subjects"] or [])
+
+    user_message = f"""{USER_INSTRUCTIONS}
+
+LEGISLATIVE_SUBJECTS:
+{subjects_text}
+
+SUBJECTS_TOP_TERM:
+{bill["top_subject"]}
+
+BILL TEXT:
+{bill_text}"""
+    if retry_context:
+        user_message += build_retry_note(retry_context)
+
+    return [
+        {"role": "system", "content": build_system_message(use_reduced)},
+        {"role": "user", "content": user_message},
+    ]
+
+
+@lru_cache(maxsize=None)
+def get_response_format():
+    """Strict JSON schema for responses, or None when structured outputs aren't in use."""
+    if not STRUCTURED_OUTPUTS:
+        return None
+    categories = load_categories()["political_categories"]
+    return category_response_format(
+        [c["name"] for c in categories],
+        [s["name"] for c in categories for s in c["subcategories"]],
+    )
+
+
+def parse_response(text):
+    """
+    Parse and validate a model response.
+
+    Returns:
+        (result, error_type, bad_names): error_type is None on success, otherwise
+        "bad_format" or "bad_category" (with the offending names).
+    """
+    try:
+        result = json.loads(clean_json_response(text.strip()))
+    except json.JSONDecodeError:
+        return None, "bad_format", []
+
+    # Check if result json has all required fields
+    if not validate(result):
+        return None, "bad_format", []
+
+    # Check if category names match the categories supplied
+    result, _, bad_categories = validate_names(result, load_categories())
+    if bad_categories:
+        return None, "bad_category", bad_categories
+
+    return result, None, []
+
+
+def finalize(result, bill_truncated):
+    """Add metadata to a validated analysis."""
+    # Add schema_version for future compatibility
+    result["schema_version"] = SCHEMA_VERSION
+    # Add if bill was truncated
+    result["bill_truncated"] = bill_truncated
+    return result
+
+
 def analyze_bill(bill_text, legislative_subjects, top_subject, model, max_retries=4):
     """
-    Analyze a political bill and return structured JSON classification.
+    Analyze a political bill and return its structured classification (synchronously).
+    Batch mode (analysis/batch_runner.py) uses the same build_messages/parse_response/finalize.
 
     Args:
         bill_text (str): The full text of the bill to analyze
-        model (str): The model to use for analysis (default: gpt-oss-120b)
-        max_retries (int): Maximum number of retry attempts for JSON parsing failures
+        model (str): The model to use for analysis
+        max_retries (int): Maximum number of retry attempts
 
     Returns:
-        dict: Parsed JSON response containing political analysis
+        dict: Validated analysis
 
     Raises:
-        Exception: If API call fails or JSON parsing fails after all retries
+        Exception: If the API call fails or no valid response is produced after all retries
     """
-
     if not bill_text.strip():
         raise ValueError("Bill text cannot be empty")
 
-    bill_text, bill_truncated = truncate_bill_text(bill_text)
+    bill = {
+        "bill_text": bill_text,
+        "legislative_subjects": legislative_subjects,
+        "top_subject": top_subject,
+    }
+    bill_truncated = is_truncated(bill_text)
 
-    categories = load_categories()
-    reduced_categories = load_reduced_categories()
-
-    # Create a comma separated string, joining together all subjects
-    subjects_text = ", ".join(legislative_subjects)
-
-    # Make nested function for separation
-    # TODO: Clean this up
-    def create_user_prompt(
-        is_retry,
-        previous_response,
-        use_reduced,
-        bad_category=False,
-        bad_format=False,
-        bad_categories="",
-    ):
-        selected_categories = reduced_categories if use_reduced else categories
-        base_prompt = f"""Please analyze the following bill and provide a comprehensive political classification:
-
-                        POLITICAL CATEGORIES
-                        {selected_categories}
-
-                        BILL TEXT:
-                        {bill_text}
-
-                        LEGISLATIVE_SUBJECTS:
-                        {subjects_text}
-
-                        SUBJECTS_TOP_TERM:
-                        {top_subject}
-
-                        Please provide:
-                        1. Classify the bill into any relevant political categories and subcategories.
-                           Each category is a topic described by its scope. Only use the categories provided above. Do NOT create new ones.
-                           Determine the impact on each relevant category using a scale from 0.0 to 1.0, where 1.0 is the most impactful.
-                           Rate the bill on how conservative/progressive it is within each category. The liberal_view and conservative_view
-                           of each category are the two poles of that category's left-right scale. Use a scale of -1 to 1, where:
-                            - -1 = fully aligned with the liberal_view
-                            - 0 = neutral or mixed
-                            - 1 = fully aligned with the conservative_view
-                        3. If a category is **not relevant**, omit it from the output.
-                        4. Analysis of what a YES vote represents politically
-                        5. Analysis of what a NO vote represents politically 
-
-                        Output Format (STRICT JSON)
-                        {{
-                            "political_categories": {{
-                                "primary_categories": [{{
-                                "name": "string",
-                                "partisan_score": -1.0 to 1.0,
-                                "impact_score": 0.0 to 1.0,
-                                "reasoning": "string"
-                                }}],
-                                "subcategories": [{{
-                                "name": "string",
-                                "partisan_score": -1.0 to 1.0,
-                                "impact_score": 0.0 to 1.0,
-                                "reasoning": "string"
-                                }}]
-                            }},
-                            "voting_analysis": {{
-                                "yes_vote": {{
-                                "political_position": "string",
-                                "philosophy": "string", 
-                                "stakeholder_support": ["array"],
-                                "reasoning": "string"
-                                }},
-                                "no_vote": {{
-                                "political_position": "string",
-                                "philosophy": "string",
-                                "stakeholder_support": ["array"], 
-                                "reasoning": "string"
-                                }}
-                            }},
-                            "bill_summary": {{
-                                "title": "string",
-                                "key_provisions": ["array"],
-                            }}
-                        }}
-
-                        CRITICAL: Return ONLY valid JSON. No markdown, no explanation, no text outside the JSON object."""
-
-        if is_retry and previous_response:
-            retry_prompt = ""
-            # Category outside of defined primary_categories used
-            if bad_category:
-                retry_prompt = f""""
-
-                    RETRY ATTEMPT: Your response included {bad_categories} in the primary_categories section, 
-                    but these categories are either subcategories, or misspellling of major categories:
-                    {previous_response[:500]}...
-
-                    In the primary_categories section, you MUST use only the top-level political categories defined, 
-                    and these categories must be spelled exactly as provided.
-
-                    Please revise your response by:
-                    Renaming the category name to its exact spelling or by
-                    Removing the bad category name from primary_categories and adding it to subcategories
-                    """
-
-            # JSON format error
-            if bad_format:
-                retry_prompt = f"""
-                    
-                    RETRY ATTEMPT: Your previous response had invalid JSON format and/or did not have the required fields:
-                    {previous_response[:500]}...
-                    
-                    Please fix the JSON syntax errors and return ONLY valid JSON."""
-
-            return base_prompt + retry_prompt
-
-        return base_prompt
-
-    # Set flags for first attempt
-    last_response = None
-    use_reduced = False
-    bad_category = False
-    bad_categories = []
-    bad_format = False
-
-    for attempt in range(max_retries + 1):
-
-        try:
-            is_retry = attempt > 0
-            # Retry for bad formats, length, or bad category names
-            if bad_format:
-                user_prompt = create_user_prompt(
-                    is_retry, last_response, use_reduced, bad_format=True
-                )
-            elif bad_category:
-                user_prompt = create_user_prompt(
-                    is_retry,
-                    last_response,
-                    use_reduced,
-                    bad_category=bad_category,
-                    bad_categories=", ".join(bad_categories),
-                )
-            # First prompt
-            else:
-                user_prompt = create_user_prompt(False, None, use_reduced)
-
-            # Use temperature of 0 for deterministic output
-            completion = client.chat.completions.create(
-                extra_body={},
-                model=model,
-                # temperature=0, gpt-5-mini is deterministic by default, so it doesn't accept temperature
-                messages=[
-                    {
-                        "role": "system",
-                        "content": SYSTEM_PROMPT,
-                    },
-                    {
-                        "role": "user",
-                        "content": user_prompt,
-                    },
-                ],
-            )
-
-            # Extract the response content
-            response_content = completion.choices[0].message.content.strip()
-            last_response = response_content
-
-            # Try to clean up common JSON issues
-            response_content = clean_json_response(response_content)
-
-            # Parse JSON response
-            try:
-                analysis_result = json.loads(response_content)
-                # Successfully parsed JSON if it hits here
-                bad_format = False
-                # Check if result json has all required fields
-                if not validate(analysis_result):
-                    print("JSON did not have required fields... retrying")
-                    bad_format = True
-                    bad_category = False
-                    bad_categories = []
-                    continue
-                # Check if category names match the categories supplied, reprompt if we can't validate
-                analysis_result, bad_category, bad_categories = validate_names(
-                    analysis_result, categories
-                )
-                if bad_category:
-                    print(
-                        f"Bad categories were found in primary categories: {', '.join(bad_categories)}... Retrying"
-                    )
-                    continue
-
-                if attempt > 0:
-                    print(f"Successfully generated analysis on retry attempt {attempt}")
-
-                # Add schema_version for future compatibility
-                analysis_result["schema_version"] = SCHEMA_VERSION
-                # Add if bill was truncated
-                analysis_result["bill_truncated"] = bill_truncated
-                return analysis_result
-            except json.JSONDecodeError as e:
-                if attempt < max_retries:
-                    print(
-                        f"JSON parse failed on attempt {attempt + 1}, retrying... Error: {e}"
-                    )
-                    continue
-                else:
-                    raise Exception(
-                        f"Failed to parse JSON response after {max_retries + 1} attempts. Last error: {e}\nLast response: {response_content}"
-                    )
-
-        except Exception as e:
-            # Check if it's a token limit error that needs reduced prompt
-            if "context_length" in str(e).lower() or "token" in str(e).lower():
-                if not use_reduced:
-                    print("Token limit exceeded, retrying with reduced frameworks...")
-                    use_reduced = True
-                    continue
-            # Check if it's a retryable error (JSON or None output)
-            if ("JSON" in str(e) or "NoneType" in str(e)) and attempt < max_retries:
-                print(
-                    f"API call failed on attempt {attempt + 1}, retrying... Error: {e}"
-                )
-                bad_format = True
-                bad_category = False
-                bad_categories = []
-                continue
-
-            raise Exception(f"API call failed: {e}")
+    return analyze_with_retries(
+        model,
+        lambda use_reduced, retry_context: build_messages(bill, use_reduced, retry_context),
+        parse_response,
+        lambda result: finalize(result, bill_truncated),
+        response_format=get_response_format(),
+        max_retries=max_retries,
+    )
 
 
 def correct_name(name, valid_names, score_threshold=70):
@@ -338,37 +319,3 @@ def validate_names(analysis_result, categories):
                     reprompt = True
 
     return analysis_result, reprompt, bad_categories
-
-
-def analyze_bills_batch(bills, model, max_retries=2):
-    """
-    Analyze multiple bills in batch.
-
-    Args:
-        bills (list): List of bill dicts, each with keys:
-            - "bill_text" (str): The full text of the bill to analyze
-            - "legislative_subjects" (list): Legislative subjects for the bill
-            - "top_subject" (str): The top subject term for the bill
-        model (str): The model to use for analysis
-        max_retries (int): Maximum number of retry attempts per bill
-
-    Returns:
-        list: List of analysis results (dicts)
-    """
-    results = []
-    for i, bill in enumerate(bills):
-        try:
-            result = analyze_bill(
-                bill["bill_text"],
-                bill["legislative_subjects"],
-                bill["top_subject"],
-                model,
-                max_retries=max_retries,
-            )
-            results.append(result)
-            print(f"Successfully analyzed bill {i+1}/{len(bills)}")
-        except Exception as e:
-            print(f"Failed to analyze bill {i+1} after all retry attempts: {e}")
-            results.append({"error": str(e)})
-
-    return results
