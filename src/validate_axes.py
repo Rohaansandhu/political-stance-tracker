@@ -3,6 +3,7 @@ Validation gate for the ideological axes. Run before building anything on top of
 
 Checks (each prints a report and saves a CSV to data/validation/<spec_hash>/):
   1. Axis correlation matrix across members; flags near-duplicate axes
+     (also computed within each party, since party sorting inflates the all-member figures)
   2. PCA on the member x axis matrix; how much variance beyond the party divide
   3. Known cross-party votes land where expected
   4. Inter-model agreement on bill-level axis positions (needs --compare_models)
@@ -26,6 +27,8 @@ MIN_BILLS = 10
 MIN_MEMBERS = 20
 # Axes correlating above this are measuring the same thing
 CORRELATION_FLAG = 0.9
+# Parties compared separately in the within-party correlation check
+PARTIES = ("D", "R")
 # An axis "engages" a bill at or above this relevance
 RELEVANCE_THRESHOLD = 0.3
 # Models agreeing less than this (Pearson r) on an axis means it needs redefining
@@ -61,12 +64,8 @@ def print_section(title):
     print(f"\n{'=' * 70}\n{title}\n{'=' * 70}")
 
 
-def check_correlations(matrix, output_dir):
-    print_section("1. Axis correlation across members")
-    corr = matrix.corr(min_periods=MIN_MEMBERS)
-    print(corr.to_string(float_format="%.2f"))
-    corr.to_csv(output_dir / "axis_correlations.csv")
-
+def flag_correlated_pairs(corr, label):
+    """Print every axis pair correlating above CORRELATION_FLAG. Returns the flagged pairs."""
     axes = list(corr.columns)
     flagged = [
         (a, b, corr.loc[a, b])
@@ -74,11 +73,44 @@ def check_correlations(matrix, output_dir):
         for b in axes[i + 1 :]
         if abs(corr.loc[a, b]) > CORRELATION_FLAG
     ]
-    if flagged:
-        for a, b, r in flagged:
-            print(f"FLAG: {a} and {b} correlate at {r:.2f}; merge or redefine")
-    else:
-        print(f"\nOK: no axis pair correlates above {CORRELATION_FLAG}")
+    for a, b, r in flagged:
+        print(f"FLAG ({label}): {a} and {b} correlate at {r:.2f}; merge or redefine")
+    if not flagged:
+        print(f"OK ({label}): no axis pair correlates above {CORRELATION_FLAG}")
+    return flagged
+
+
+def check_correlations(matrix, parties, output_dir):
+    print_section("1. Axis correlation across members")
+    corr = matrix.corr(min_periods=MIN_MEMBERS)
+    print(corr.to_string(float_format="%.2f"))
+    corr.to_csv(output_dir / "axis_correlations.csv")
+    flag_correlated_pairs(corr, "all members")
+    print(
+        "\nNote: members vote along party lines, so any axis whose bills split by party "
+        "correlates with the others across the whole chamber. The within-party check below "
+        "is the better test of redundancy."
+    )
+
+    # Within a party the party-sorting effect is gone, leaving real overlap between axes
+    print("\n1b. Axis correlation within each party")
+    for party in PARTIES:
+        in_party = matrix[parties.reindex(matrix.index) == party]
+        if len(in_party) < MIN_MEMBERS:
+            print(f"{party}: only {len(in_party)} members, skipping")
+            continue
+
+        party_corr = in_party.corr(min_periods=MIN_MEMBERS)
+        party_corr.to_csv(output_dir / f"axis_correlations_{party}.csv")
+        print(f"\n{party} only (n={len(in_party)}): correlation with left_right")
+        if "left_right" in party_corr:
+            print(
+                party_corr["left_right"]
+                .drop("left_right")
+                .to_frame("r")
+                .T.to_string(float_format="%.2f")
+            )
+        flag_correlated_pairs(party_corr, f"{party} only")
 
 
 def check_pca(matrix, parties, output_dir):
@@ -300,7 +332,7 @@ if __name__ == "__main__":
     output_dir = get_output_dir("data/validation", args.spec_hash)
     print(f"Validating {args.spec_hash}: {len(matrix)} members, axes {list(matrix.columns)}")
 
-    check_correlations(matrix, output_dir)
+    check_correlations(matrix, parties, output_dir)
     check_pca(matrix, parties, output_dir)
     check_known_votes(meta, output_dir)
     if args.compare_models:
