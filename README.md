@@ -74,17 +74,14 @@ Here is a list of all environment variables needed in this project:
 Run the following script to fetch roll call vote data and automatically load it into the database:
 
 ```bash
-python3 src/get_votes.py [--congress=NUM] [--session=NUM] [--sessions=LIST] [--force] [--fast]
+python3 src/get_votes.py [--chamber=house|senate] [--congress=NUM] [--session=NUM] [--force]
 ```
-- `--congress`, `--session`, `--sessions`: Specify which congress/session(s) to fetch.
+- `--chamber`: `house` (default) or `senate`.
+- `--congress`, `--session`: Specify which congress/session to fetch (defaults to the current congress, every started session).
 - `--force`: Force re-download of all vote data.
-- `--fast`: Only pull data from the last 3 days.
 
-This script internally calls the `usc-run votes` command, which downloads all voting roll call data into the `data/{congress}/votes` directory.  
-You can also run `usc-run votes` directly with its options if you prefer:
-```bash
-usc-run votes [--congress=NUM] [--session=NUM] [--sessions=LIST] [--force] [--fast]
-```
+**House:** `clerk.house.gov` no longer serves the vote index pages that `usc-run votes` depends on, so new House votes are found by trying roll numbers in order (including any gaps) until the clerk has no more. Votes are saved to `data/{congress}/votes/{session}/`.
+
 Make sure you run these commands in the top-level directory so the data populates in the correct folder.
 
 
@@ -115,8 +112,32 @@ python3 src/generate_bill_analysis.py [--force] [--numOfBills num]
 Options:
 - `--force`: Overwrite existing analyses and update outdated schemas.
 - `--numOfBills`: Only process num bills (useful for testing or limiting API usage).
+- `--bill_ids`: Only process these bill ids (e.g. a pilot set from `python3 src/select_pilot_bills.py`).
+- `--mode sync|batch`: `sync` (default) works with any provider. `batch` uses the OpenAI Batch API (see below).
 
 Output: MongoDB bill_analyses collection
+
+#### Batch mode (OpenAI only, about half the price, results within 24 hours)
+Needs `CLIENT=openai`. Works the same for step 3 and 3b (`generate_bill_analysis.py` and `generate_axis_analysis.py`), and every job is recorded in the `llm_batches` collection, so you can stop and resume. Submit the axis pass only after the category pass has been collected, since axis prompts use the bill's category tags.
+```bash
+python3 src/generate_bill_analysis.py --mode batch submit [--force] [--bill_ids ...] [--numOfBills N] [--dry_run]
+python3 src/generate_bill_analysis.py --mode batch status
+python3 src/generate_bill_analysis.py --mode batch collect
+python3 src/generate_bill_analysis.py --mode batch retry
+```
+- `submit`: one request per bill, chunked (`--chunk_size`, default 500 bills per batch). Never resubmits bills that already have an analysis, are in an open batch, or are awaiting retry. `--dry_run` prints the estimated tokens and cost without submitting. A submission over `--max_cost` (default $5), or with an unknown cost, needs `--confirm`.
+- `collect`: downloads finished batches, validates, saves analyses, and records token usage per bill (printed with the real cost).
+- `retry`: resubmits failures only, with the corrective retry prompts. After 2 retry rounds, the remainder goes through the sync path.
+
+Responses use OpenAI Structured Outputs (strict JSON schema, with category and axis names as enums), which removes most bad-JSON and misspelled-category retries. Also set a spending limit in the OpenAI dashboard.
+
+Optional settings (environment variables):
+- `LLM_PRICE_INPUT_PER_M`, `LLM_PRICE_OUTPUT_PER_M`, `LLM_PRICE_CACHED_INPUT_PER_M`: your model's normal $/1M-token prices (batch discount is applied automatically). Without them, cost estimates are unknown and `submit` requires `--confirm`.
+- `LLM_MAX_COMPLETION_TOKENS` (default 16000): per-request output cap, including reasoning tokens.
+- `LLM_REASONING_EFFORT`: sent as `reasoning_effort` when set (the model must support it).
+- `LLM_EXPECTED_REASONING_TOKENS`: per-bill reasoning tokens to assume in estimates (default 0).
+- `LLM_STRUCTURED_OUTPUTS=0`: turn off Structured Outputs for a model that doesn't support them.
+- Install `tiktoken` for accurate token counts (otherwise ~4 characters per token is assumed).
 
 ### 3b. Generate Bill Axis Analyses
 Categories are issue topics; **axes** are viewpoints that cut across them (see `political_definitions/political_axes.json`). This is a separate LLM pass over bills that already have a category analysis from step 3 (same `MODEL`), so category analyses never need regenerating when axes change.
@@ -158,7 +179,7 @@ Options:
 - `--spec_hash`: (REQUIRED) Specify the specific legislator profiles to make plots with
 
 ### 7. Validate Axes
-Checks that the axes are worth building on: axis correlations, PCA on the member x axis matrix, known cross-party votes (`political_definitions/validation_bills.json`), inter-model agreement, and observed axis x category applicability. Results print and are saved to `data/validation/<spec_hash>/`.
+Checks that the axes are worth building on: axis correlations (across all members and within each party, since party sorting inflates the all-member figures), PCA on the member x axis matrix, known cross-party votes (`political_definitions/validation_bills.json`), inter-model agreement, and observed axis x category applicability. Results print and are saved to `data/validation/<spec_hash>/`.
 ```bash
 python3 src/validate_axes.py --spec_hash spec_hash [--compare_models modelA modelB]
 ```
