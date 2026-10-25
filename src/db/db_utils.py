@@ -35,6 +35,7 @@ def ensure_indexes():
         ],
         unique=True,
     )
+    db.llm_batches.create_index([("batch_id", ASCENDING)], unique=True)
     db.legislator_profiles.create_index(
         [
             ("member_id", ASCENDING),
