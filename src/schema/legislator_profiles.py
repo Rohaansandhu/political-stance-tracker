@@ -32,6 +32,9 @@ class AxisStats(RankStats):
     bill_count: int
     # Z-score among members of the same party, None when the group is too small
     within_party_z: Optional[float] = None
+    # Z-score against current members of the same chamber (None if undefined).
+    # Set by create_axis_stats.py, which must be rerun after profiles are rebuilt.
+    chamber_z: Optional[float] = None
     # Only set for the computed institutional axis
     defection_rate: Optional[float] = None
     by_category: dict[str, AxisCategoryStats] = {}
@@ -49,6 +52,9 @@ class LegislatorProfile(BaseModel):
     spec_hash: str
 
     vote_count: int
+
+    # Whether the member is currently in office. Set by create_axis_stats.py.
+    current: Optional[bool] = None
 
     primary_categories: dict[str, CategoryStats] = {}
     subcategories: dict[str, CategoryStats] = {}

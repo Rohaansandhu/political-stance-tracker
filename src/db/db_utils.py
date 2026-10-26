@@ -36,6 +36,9 @@ def ensure_indexes():
         unique=True,
     )
     db.llm_batches.create_index([("batch_id", ASCENDING)], unique=True)
+    db.axis_stats.create_index(
+        [("spec_hash", ASCENDING), ("current", ASCENDING)], unique=True
+    )
     db.legislator_profiles.create_index(
         [
             ("member_id", ASCENDING),
@@ -46,6 +49,16 @@ def ensure_indexes():
         unique=True,
     )
     db.rollcall_votes.create_index([("vote_id", ASCENDING)], unique=True)
+
+
+def get_current_member_ids():
+    """member_ids of every legislator currently in office."""
+    return [
+        legislator["member_id"]
+        for legislator in get_collection("legislators").find(
+            {"current": True}, {"member_id": 1}
+        )
+    ]
 
 
 def update_one(collection_name, document, key_fields):

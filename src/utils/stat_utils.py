@@ -171,6 +171,27 @@ def within_group_zscores(values):
     return [float(z) for z in (arr - arr.mean()) / std]
 
 
+def z_score(value, mean, sd):
+    """How many standard deviations `value` is from `mean`, or None when `sd` is missing or 0."""
+    if mean is None or not sd:
+        return None
+    return float((value - mean) / sd)
+
+
+def pearson_r(xs, ys):
+    """
+    Pearson correlation of two equal-length sequences, or None when it is undefined:
+    fewer than 3 pairs, or no spread in either sequence.
+    """
+    if len(xs) < 3:
+        return None
+
+    x, y = np.array(xs, dtype=float), np.array(ys, dtype=float)
+    if x.std() == 0 or y.std() == 0:
+        return None
+    return float(np.corrcoef(x, y)[0, 1])
+
+
 def sigmoid_transform(x, midpoint=0, steepness=1):
     """Flexible logistic scaling for bounded ideological or impact measures."""
     return expit(steepness * (x - midpoint))

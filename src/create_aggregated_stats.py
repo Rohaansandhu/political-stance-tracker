@@ -361,12 +361,7 @@ if __name__ == "__main__":
 
     all_stats = []
 
-    curr_legislators = []
-    # fetch all current member_ids from legislators
-    legislator_col = db_utils.get_collection("legislators")
-    ids = []
-    for leg in legislator_col.find({"current": True}):
-        ids.append(leg["member_id"])
+    ids = db_utils.get_current_member_ids()
 
     if args.spec_hash:
         print(f"Generating stats for {args.spec_hash}")

@@ -178,6 +178,16 @@ python3 src/create_rankings.py [--spec_hash spec_hash]
 Options:
 - `--spec_hash`: (REQUIRED) Specify the specific legislator profiles to make plots with
 
+### 6b. Axis Stats
+Precomputes what the website's axis compass and per-legislator fingerprint need: a `current` flag and `axes.<id>.chamber_z` on every profile with axes (updated in place), and an `axis_stats` document per profile set, for current members and for all members (per-axis mean/SD and axis-pair correlations). No LLM calls.
+```bash
+python3 src/create_axis_stats.py [--spec_hash spec_hash]
+```
+Options:
+- `--spec_hash`: (Optional) only this profile set (defaults to every set that has axes)
+
+Rerun it after `calc_member_ideology.py` (which replaces `axes` and so drops `chamber_z`) and whenever the `legislators` collection's `current` flags change (`get_legislators.py --update`). Members need at least 10 bills on an axis to count toward its stats.
+
 ### 7. Validate Axes
 Checks that the axes are worth building on: axis correlations (across all members and within each party, since party sorting inflates the all-member figures), PCA on the member x axis matrix, known cross-party votes (`political_definitions/validation_bills.json`), inter-model agreement, and observed axis x category applicability. Results print and are saved to `data/validation/<spec_hash>/`.
 ```bash
