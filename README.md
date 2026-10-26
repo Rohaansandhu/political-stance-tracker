@@ -187,11 +187,15 @@ python3 src/validate_axes.py --spec_hash spec_hash [--compare_models modelA mode
 ### Institutional axis
 `python3 src/calc_institutional.py [--congress num] [--chamber house|senate]` prints the most and least party-loyal members. It is a sanity check; step 4 runs the same calculation.
 
+### Publishing the definitions
+`python3 src/load_definitions.py [--target local|cloud|both] [--dry_run]` replaces the single document in the `categories` collection with `political_categories.json` and the single document in the `axes` collection with `political_axes.json`. The old document is saved to `data/definition_backups/` first. Rerun it whenever a definition file changes.
+
 ### Syncing to the cloud DB
-`src/cloud_db_updater.py` is generic. To sync axis analyses:
+`src/cloud_db_updater.py` syncs one collection per call and is generic. It syncs every local document unless you pass `--query` with a JSON MongoDB filter, and `--dry_run` reports what would be synced without writing. For example, to sync the schema v5 axis analyses:
 ```bash
-python3 src/cloud_db_updater.py --local_collection bill_axis_analyses --cloud_collection bill_axis_analyses --key_fields bill_id,model,axis_schema_version
+python3 src/cloud_db_updater.py --local_collection bill_axis_analyses --cloud_collection bill_axis_analyses --key_fields bill_id,model,axis_schema_version --query '{"axis_schema_version": 1}' --dry_run
 ```
+Remove `--dry_run` to write. 
 
 ## Data Output
 All outputs are stored in MongoDB or the generated `data/` folder.

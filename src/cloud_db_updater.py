@@ -1,4 +1,5 @@
 import argparse
+import json
 import db.db_utils as db_utils
 from db.db_utils import DB_NAME
 from pymongo import UpdateOne, MongoClient
@@ -29,7 +30,11 @@ def list_of_strings(arg_value):
 
 
 def sync_local_to_cloud(
-    local_collection_name: str, cloud_collection_name: str, key_fields
+    local_collection_name: str,
+    cloud_collection_name: str,
+    key_fields,
+    query=None,
+    dry_run=False,
 ):
     """
     Sync documents from the local DB to the cloud DB.
@@ -37,7 +42,10 @@ def sync_local_to_cloud(
     - Inserts documents that do not exist in the cloud.
     - Updates cloud documents only if local last_modified is newer.
     - key_fields: list of fields used to identify documents (compound keys supported)
+    - query: optional MongoDB filter; only matching local documents are synced
+    - dry_run: report what would be synced without writing to the cloud
     """
+    query = query or {}
 
     local_collection = db_utils.get_collection(local_collection_name)
     cloud_collection = get_cloud_collection(cloud_collection_name)
@@ -46,9 +54,9 @@ def sync_local_to_cloud(
     if isinstance(key_fields, str):
         key_fields = [key_fields]
 
-    # Fetch all documents from local DB
-    local_docs = list(local_collection.find({}))
-    cloud_docs = list(cloud_collection.find({}))
+    # Fetch the documents to sync from the local DB, and the cloud's matching documents
+    local_docs = list(local_collection.find(query))
+    cloud_docs = list(cloud_collection.find(query))
 
     # Make a tuple using the key_fields for finds
     cloud_index = {
@@ -91,7 +99,12 @@ def sync_local_to_cloud(
             if not cloud_ts or isinstance(cloud_ts, str) or local_ts > cloud_ts:
                 actions.append(UpdateOne(filter_doc, {"$set": doc}, upsert=True))
 
-    if actions:
+    if dry_run:
+        print(
+            f"Dry run: would sync {len(actions)} of {len(local_docs)} matching documents "
+            f"to cloud '{cloud_collection_name}'."
+        )
+    elif actions:
         start_time = time.time()
         result = cloud_collection.bulk_write(actions)
         end_time = time.time()
@@ -121,6 +134,17 @@ if __name__ == "__main__":
         required=True,
         help="Specify the key fields of the collection. These are the unique fields that tell the cloud db which document to update. Specify in a comma seperated list.",
     )
+    parser.add_argument(
+        "--query",
+        type=json.loads,
+        default=None,
+        help='Only sync local documents matching this MongoDB filter, as JSON (e.g. \'{"schema_version": 5}\')',
+    )
+    parser.add_argument(
+        "--dry_run",
+        action="store_true",
+        help="Report what would be synced without writing to the cloud",
+    )
     args = parser.parse_args()
 
     # Parse strings using commas
@@ -134,4 +158,6 @@ if __name__ == "__main__":
         local_collection_name=args.local_collection,
         cloud_collection_name=args.cloud_collection,
         key_fields=key_fields,
+        query=args.query,
+        dry_run=args.dry_run,
     )

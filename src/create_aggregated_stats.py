@@ -21,6 +21,28 @@ def calculate_correlation(x: List[float], y: List[float]) -> float:
     return float(np.corrcoef(x_arr, y_arr)[0, 1])
 
 
+HISTOGRAM_BINS = 40
+# Category scores span the full -1 to 1 scale
+CATEGORY_BIN_RANGE = (-1.0, 1.0)
+# Smallest range an axis histogram may have (a range of 0 can't be divided into bins)
+MIN_AXIS_BIN_SPAN = 0.01
+
+
+def get_bin_range(field, scores):
+    """
+    Score range a histogram's bins span. Category histograms use the full -1 to 1 scale.
+    Axis scores sit in a much narrower band, so those fit the data's min and max.
+    """
+    if field != "axes":
+        return CATEGORY_BIN_RANGE
+
+    low, high = min(scores), max(scores)
+    if high - low < MIN_AXIS_BIN_SPAN:
+        middle = (low + high) / 2
+        low, high = middle - MIN_AXIS_BIN_SPAN / 2, middle + MIN_AXIS_BIN_SPAN / 2
+    return low, high
+
+
 def generate_histogram_data(profiles: List[Dict], field: str, category: str) -> Dict:
     """Generate histogram bins and statistics for a given field/category."""
 
@@ -39,35 +61,35 @@ def generate_histogram_data(profiles: List[Dict], field: str, category: str) -> 
     if not valid_profiles:
         return None
 
-    # Create histogram bins from -1 to 1
-    bin_size = 0.05
+    scores = [p[field][category]["score"] for p in valid_profiles]
+    bin_min, bin_max = get_bin_range(field, scores)
+    bin_size = (bin_max - bin_min) / HISTOGRAM_BINS
+
+    # Enough decimals that narrow bins still get distinct labels
+    decimals = 2 if bin_size >= 0.01 else 3 if bin_size >= 0.001 else 4
+
     bins = []
+    for i in range(HISTOGRAM_BINS):
+        # + 0.0 turns -0.0 into 0.0
+        bin_start = round(bin_min + i * bin_size, decimals) + 0.0
+        bin_end = round(bin_min + (i + 1) * bin_size, decimals) + 0.0
 
-    for i in np.arange(-1.0, 1.0, bin_size):
-        bin_start = float(i)
-        bin_end = float(i + bin_size)
-
-        # Convert -0.0 to 0.0
-        if bin_start == -0.0:
-            bin_start = 0.0
-        if bin_end == -0.0:
-            bin_end = 0.0
-
-        # Show single value if start and end round to the same value at 2 decimals
-        if round(bin_start, 2) == round(bin_end, 2):
-            bin_label = f"{bin_start:.2f}"
+        # Show single value if start and end round to the same value
+        if bin_start == bin_end:
+            bin_label = f"{bin_start:.{decimals}f}"
         else:
-            bin_label = f"{bin_start:.2f} to {bin_end:.2f}"
+            bin_label = f"{bin_start:.{decimals}f} to {bin_end:.{decimals}f}"
 
-        bin_data = {"range": bin_label, "D": 0, "R": 0, "I": 0}
+        bins.append({"range": bin_label, "D": 0, "R": 0, "I": 0})
 
-        for profile in valid_profiles:
-            score = profile[field][category]["score"]
-            if bin_start <= score < bin_end:
-                party = profile.get("party", "I")
-                bin_data[party] = bin_data.get(party, 0) + 1
-
-        bins.append(bin_data)
+    for profile in valid_profiles:
+        score = profile[field][category]["score"]
+        # Bins are [start, end), and scores are rounded to 3 decimals so many sit exactly
+        # on an edge; the epsilon keeps float error from pushing them into the lower bin.
+        # The top edge belongs to the last bin.
+        index = min(int((score - bin_min) / bin_size + 1e-9), HISTOGRAM_BINS - 1)
+        party = profile.get("party", "I")
+        bins[index][party] = bins[index].get(party, 0) + 1
 
     # Calculate statistics by party
     stats = {}
@@ -97,6 +119,8 @@ def generate_histogram_data(profiles: List[Dict], field: str, category: str) -> 
     return {
         "chart_type": "histogram",
         "bins": bins,
+        # Score range the bins span, so charts can place them (categories use -1 to 1)
+        "bin_range": [bin_min, bin_max],
         "stats": stats,
         "total_count": len(valid_profiles),
     }
