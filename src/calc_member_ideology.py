@@ -731,14 +731,14 @@ def generate_rankings(profiles):
 
     # Compute rankings *within each (field, category) group*
     df["rank"] = df.groupby(["field", "category"])["score"].rank(
-        method="dense", ascending=False
+        method="min", ascending=False
     )
     df["percentile_rank"] = df.groupby(["field", "category"])["score"].rank(
         pct=True, ascending=True
     )
     current_df["current_rank"] = current_df.groupby(["field", "category"])[
         "score"
-    ].rank(method="dense", ascending=False)
+    ].rank(method="min", ascending=False)
     current_df["current_percentile_rank"] = current_df.groupby(["field", "category"])[
         "score"
     ].rank(pct=True, ascending=True)
