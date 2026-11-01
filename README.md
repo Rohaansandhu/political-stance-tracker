@@ -4,10 +4,7 @@ Analyzes voting records to show where US Congress Members stand on major politic
 If you're curious about the role of LLMs in legislation summaries and possible political analysis, I'd highly recommend checking out this paper from 2024 [political-llm.org](https://political-llm.org/). Another great research piece was produced last May, discussing an LLM-driven framework for scaling Japanese parliamentary members using their political speeches [KOKKAI DOC](https://arxiv.org/pdf/2505.07118).
 
 ## Website Is Up! [Political Stance Tracker Website](https://www.uspolitrack.org)
-A website with my initial findings and results are up. However there's still:
-- More UI improvements to come.
-- New features on the way.
-- More data ready to be analyzed.
+A website with initial findings and results are up. Please check it out!
 
 ## Setup
 Clone this repo and install dependencies in a virtual environment:
@@ -40,7 +37,7 @@ You must have MongoDB installed and available in your system PATH. For more adva
 
 ### LLM API Key Required
 To use the bill analysis features, you must create your own LLM API Key using one of the supported providers:
-[OpenRouter](https://openrouter.ai/), [Google Ai Studio](https://ai.google.dev/gemini-api/docs), [Cerebras](https://www.cerebras.ai/).
+[OpenRouter](https://openrouter.ai/), [Google Ai Studio](https://ai.google.dev/gemini-api/docs), [Cerebras](https://www.cerebras.ai/), [OpenAI](https://openai.com/).
 This allows you to use the LLM of your choice for bill analysis.
 
 1. Set your API key in your .env file (recommended) or run this (replace `YOUR_API_KEY` with the correct api key from your provider of choice):
@@ -48,8 +45,9 @@ This allows you to use the LLM of your choice for bill analysis.
   export OPENROUTER_API_KEY=YOUR_API_KEY
   export GEMINI_API_KEY=YOUR_API_KEY
   export CEREBRAS_API_KEY=YOUR_API_KEY
+  export OPENAI_API_KEY=YOUR_API_KEY
   ```
-2. Also, depending on which provider you choose, you will need to specify the client: (`openrouter`, `gemini`, or `cerebras`)
+2. Also, depending on which provider you choose, you will need to specify the client: (`openrouter`, `openai`, `gemini`, or `cerebras`)
 ```bash
   export CLIENT=YOUR_CLIENT_CHOICE
   ```
@@ -62,7 +60,8 @@ Here is a list of all environment variables needed in this project:
 - `OPENROUTER_API_KEY` if you use openrouter
 - `GEMINI_API_KEY` if you use gemini
 - `CEREBRAS_API_KEY` if you use cerebras
-- `CLIENT` to specify between openrouter, gemini, and cerebras
+- `OPENAI_API_KEY` if you use openai
+- `CLIENT` to specify between openrouter, gemini, cerebras, and openai
 - `MODEL` to specify the model name from the client
 - `MONGO_URI` to specify the db instance
 - `DB_NAME` to specify the db name
