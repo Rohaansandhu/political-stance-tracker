@@ -117,22 +117,48 @@ def sync_local_to_cloud(
         print(f"No updates required for cloud collection '{cloud_collection_name}'.")
 
 
+def sync_hwyv_cards(spec_hash, dry_run=False):
+    """
+    Sync one profile set's hwyv_cards to the cloud, and remove the cards that create_hwyv_cards.py
+    removed locally because they're no longer playable.
+    """
+    query = {"spec_hash": spec_hash}
+    sync_local_to_cloud(
+        local_collection_name="hwyv_cards",
+        cloud_collection_name="hwyv_cards",
+        key_fields=["spec_hash", "vote_id"],
+        query=query,
+        dry_run=dry_run,
+    )
+
+    local_ids = db_utils.get_collection("hwyv_cards").distinct("vote_id", query)
+    stale = {"spec_hash": spec_hash, "vote_id": {"$nin": local_ids}}
+    cloud_collection = get_cloud_collection("hwyv_cards")
+    if dry_run:
+        count = cloud_collection.count_documents(stale)
+        print(f"Dry run: would remove {count} cards from cloud 'hwyv_cards'.")
+    else:
+        result = cloud_collection.delete_many(stale)
+        print(f"Removed {result.deleted_count} cards from cloud 'hwyv_cards'.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--local_collection",
-        required=True,
         help="Specify the name of the local collection used to update the cloud",
     )
     parser.add_argument(
         "--cloud_collection",
-        required=True,
         help="Specify the name of the cloud collection to update",
     )
     parser.add_argument(
         "--key_fields",
-        required=True,
         help="Specify the key fields of the collection. These are the unique fields that tell the cloud db which document to update. Specify in a comma seperated list.",
+    )
+    parser.add_argument(
+        "--hwyv_spec_hash",
+        help="Sync hwyv_cards for this spec_hash, in place of the three collection options",
     )
     parser.add_argument(
         "--query",
@@ -147,11 +173,23 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Parse strings using commas
-    key_fields = list_of_strings(args.key_fields)
+    if not args.hwyv_spec_hash and not (
+        args.local_collection and args.cloud_collection and args.key_fields
+    ):
+        parser.error(
+            "--local_collection, --cloud_collection and --key_fields are required "
+            "unless --hwyv_spec_hash is given"
+        )
 
     if not CLOUD_MONGO_URI:
         raise ValueError("CLOUD DB URI NOT FOUND!!!")
+
+    if args.hwyv_spec_hash:
+        sync_hwyv_cards(args.hwyv_spec_hash, dry_run=args.dry_run)
+        raise SystemExit
+
+    # Parse strings using commas
+    key_fields = list_of_strings(args.key_fields)
 
     # Edit this with the collections to update
     sync_local_to_cloud(

@@ -49,6 +49,9 @@ def ensure_indexes():
         unique=True,
     )
     db.rollcall_votes.create_index([("vote_id", ASCENDING)], unique=True)
+    db.hwyv_cards.create_index(
+        [("spec_hash", ASCENDING), ("vote_id", ASCENDING)], unique=True
+    )
 
 
 def get_current_member_ids():

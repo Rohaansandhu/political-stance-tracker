@@ -187,6 +187,19 @@ Options:
 
 Rerun it after `calc_member_ideology.py` (which replaces `axes` and so drops `chamber_z`) and whenever the `legislators` collection's `current` flags change (`get_legislators.py --update`). Members need at least 10 bills on an axis to count toward its stats.
 
+### 6b. Create How Would You Vote? Cards
+Builds the website's `hwyv_cards` collection: one card per bill with a contested final-passage roll call, about 40 of them marked `featured`. Needs the profile set's `agreement` data for the site's matches page.
+```bash
+python3 src/create_hwyv_cards.py --spec_hash spec_hash [--congresses 118 119] [--featured_count 40] [--overrides config/hwyv_featured_overrides.json] [--check] [--dry_run]
+```
+Options:
+- `--congresses`: (Optional) congresses to take roll calls from (defaults to the latest 2)
+- `--overrides`: (Optional) JSON file of per-chamber `include` / `exclude` vote_ids, which win over the auto-pick
+- `--check`: print the coverage report and don't write
+- `--dry_run`: report what would be written without writing
+
+Sync to the cloud with `python3 src/cloud_db_updater.py --hwyv_spec_hash spec_hash [--dry_run]`, which also removes cards no longer playable.
+
 ### 7. Validate Axes
 Checks that the axes are worth building on: axis correlations (across all members and within each party, since party sorting inflates the all-member figures), PCA on the member x axis matrix, known cross-party votes (`political_definitions/validation_bills.json`), inter-model agreement, and observed axis x category applicability. Results print and are saved to `data/validation/<spec_hash>/`.
 ```bash
