@@ -206,6 +206,27 @@ Checks that the axes are worth building on: axis correlations (across all member
 python3 src/validate_axes.py --spec_hash spec_hash [--compare_models modelA modelB]
 ```
 
+### 8. Amendment votes (separate pipeline)
+Amendment roll calls isolate one change to a bill. This pipeline scores them and builds profiles under new spec_hashes (`<spec>_amd1-only` and `<spec>_amd1-combined`). It never writes to `member_votes`, `bill_analyses`, `bill_axis_analyses`, or any existing profile spec.
+
+1. Join amendment roll calls to amendments via the Congress.gov API (needs `CONGRESS_API_KEY` in `.env`, free from api.data.gov). Responses are cached in `data/congress_api_cache/`, so reruns are fast. `--report` prints matched % per congress x chamber and writes `data/amendments/unmatched.csv` and `en_bloc.csv`.
+```bash
+python3 src/get_amendments.py [--congress num] [--chamber house|senate] [--bill_ids hr2799-118] [--force] [--report]
+```
+2. Score each amendment's kind (`substantive | technical | pro_forma | en_bloc`), primary categories, and axes into `amendment_analyses`. The input is the amendment's purpose (or its description) plus the parent bill's summary. The sponsor and party are never sent. `--bill_ids` takes amendment ids here. Batch mode works the same as step 3.
+```bash
+python3 src/generate_amendment_analysis.py [--bill_ids hamdt858-118 ...] [--numOfBills N] [--mode batch submit --dry_run]
+```
+3. Build profiles. `--votes amendments` uses amendment votes only, and `--votes combined` uses passage and amendment votes together. Only `substantive` amendments and "agree to" roll calls count.
+```bash
+python3 src/calc_amendment_ideology.py --model model --chamber house --votes amendments|combined [--congress num] [--bill_type hr ...]
+```
+4. Validate: coverage, agreement with passage-only profiles, within-party spread, amendment share, and the H.R. 2799 pilot check. Also run `validate_axes.py` on both new spec_hashes.
+```bash
+python3 src/validate_amendments.py --spec_hash passage_only_spec_hash
+```
+In combined profiles, `top_bills` and `recent_votes` can contain `hamdt…`/`samdt…` ids, so the site has to link those to congress.gov amendment pages before a combined spec is published.
+
 ### Institutional axis
 `python3 src/calc_institutional.py [--congress num] [--chamber house|senate]` prints the most and least party-loyal members. It is a sanity check; step 4 runs the same calculation.
 

@@ -52,6 +52,17 @@ def ensure_indexes():
     db.hwyv_cards.create_index(
         [("spec_hash", ASCENDING), ("vote_id", ASCENDING)], unique=True
     )
+    # Amendment pipeline (get_amendments.py, generate_amendment_analysis.py)
+    db.amendments.create_index([("amendment_id", ASCENDING)], unique=True)
+    db.amendments.create_index([("vote_ids", ASCENDING)])
+    db.amendment_analyses.create_index(
+        [
+            ("amendment_id", ASCENDING),
+            ("model", ASCENDING),
+            ("amendment_schema_version", DESCENDING),
+        ],
+        unique=True,
+    )
 
 
 def get_current_member_ids():

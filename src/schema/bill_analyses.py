@@ -104,3 +104,28 @@ def axis_response_format(axis_ids):
     schema = _make_strict(AxisAnalysis.model_json_schema())
     schema["$defs"]["AxisScore"]["properties"]["axis"]["enum"] = list(axis_ids)
     return _response_format("axis_analysis", schema)
+
+
+# --- Amendment analyses (generate_amendment_analysis.py) ---
+
+AMENDMENT_KINDS = ("substantive", "technical", "pro_forma", "en_bloc")
+
+
+class AmendmentAnalysis(BaseModel):
+    kind: str  # one of AMENDMENT_KINDS
+    summary: str  # one sentence: what a YES vote changes
+    primary_categories: list[Category]
+    axis_scores: list[AxisScore]
+
+
+def amendment_response_format(primary_names, axis_ids):
+    """
+    Strict `response_format` for AmendmentAnalysis. The kind, category names, and axis ids
+    are enums, so the model can't invent one.
+    """
+    schema = _make_strict(AmendmentAnalysis.model_json_schema())
+    defs = schema["$defs"]
+    schema["properties"]["kind"]["enum"] = list(AMENDMENT_KINDS)
+    defs["Category"]["properties"]["name"]["enum"] = list(primary_names)
+    defs["AxisScore"]["properties"]["axis"]["enum"] = list(axis_ids)
+    return _response_format("amendment_analysis", schema)

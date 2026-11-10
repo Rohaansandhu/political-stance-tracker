@@ -373,6 +373,18 @@ def build_institutional_stats(institutional_scores, member_id):
     }
 
 
+def gather_legislator_votes(member_id, extra_votes_by_member=None, include_db_votes=True):
+    """A legislator's vote records: member_votes docs, plus any extra in-memory records."""
+    votes = (
+        list(db_utils.get_collection("member_votes").find({"member_id": member_id}))
+        if include_db_votes
+        else []
+    )
+    if extra_votes_by_member:
+        votes += extra_votes_by_member.get(member_id, [])
+    return votes
+
+
 def process_all_legislators(
     bill_analyses,
     model,
@@ -382,8 +394,16 @@ def process_all_legislators(
     axis_analyses=None,
     axis_schema=None,
     institutional_scores=None,
+    extra_votes_by_member=None,
+    include_db_votes=True,
 ):
-    """Process ideology scores for all legislators"""
+    """
+    Process ideology scores for all legislators.
+
+    extra_votes_by_member ({member_id: [vote records]}) adds in-memory votes (amendment
+    votes from calc_amendment_ideology.py); include_db_votes=False leaves out member_votes.
+    The defaults give exactly the member_votes records, as before.
+    """
 
     # If schema not specified, use latest version
     if schema is None:
@@ -406,8 +426,8 @@ def process_all_legislators(
                 continue
         legislator_info = build_legislator_info(legislator_data)
         # get legislator votes from member_votes collection
-        legislator_votes = db_utils.get_collection("member_votes").find(
-            {"member_id": legislator_data["member_id"]}
+        legislator_votes = gather_legislator_votes(
+            legislator_data["member_id"], extra_votes_by_member, include_db_votes
         )
 
         profile = create_legislator_profile(
