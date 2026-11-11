@@ -1,9 +1,11 @@
 """
 Precompute what the website's axis compass and fingerprint need, so the browser doesn't:
 
-  - `current` and `axes.<id>.chamber_z` on every legislator profile, in place
+  - `current` and `axes.<id>.chamber_z` on every legislator profile, in place, plus
+    `axes.<id>.agreement.chamber_z` where the profile has the agreement index
   - an `axis_stats` document per (spec_hash, current): per-axis mean/SD and the
-    axis-pair correlation matrices
+    axis-pair correlation matrices, and the same over `agreement.score` in
+    `agreement_axes` / `agreement_correlations`
 
 Rerun after calc_member_ideology.py (which replaces `axes`, dropping `chamber_z`) and after
 the `legislators` collection's `current` flags change.
@@ -43,6 +45,7 @@ def load_profiles(spec_hash, axis_ids):
     fields = ("score", "within_party_z", "bill_count")
     projection = {"member_id": 1, "party": 1}
     projection.update({f"axes.{a}.{f}": 1 for a in axis_ids for f in fields})
+    projection.update({f"axes.{a}.agreement": 1 for a in axis_ids})
     return list(
         db_utils.get_collection("legislator_profiles").find(
             {"spec_hash": spec_hash}, projection
@@ -54,6 +57,14 @@ def axis_entry(profile, axis):
     """The member's entry on an axis if it has enough bills to count, else None."""
     entry = profile.get("axes", {}).get(axis)
     if entry is None or entry["bill_count"] < MIN_BILLS:
+        return None
+    return entry
+
+
+def agreement_entry(profile, axis):
+    """The member's agreement stats on an axis if it has enough contested votes, else None."""
+    entry = profile.get("axes", {}).get(axis, {}).get("agreement")
+    if entry is None or entry["score"] is None or entry["vote_count"] < MIN_BILLS:
         return None
     return entry
 
@@ -78,8 +89,8 @@ def summarize(scores):
     }
 
 
-def axis_summary(profiles, axis):
-    entries = [(p["party"], axis_entry(p, axis)) for p in profiles]
+def axis_summary(profiles, axis, entry_fn=axis_entry):
+    entries = [(p["party"], entry_fn(p, axis)) for p in profiles]
     entries = [(party, e) for party, e in entries if e is not None]
 
     summary = summarize([e["score"] for _, e in entries])
@@ -94,7 +105,7 @@ def axis_summary(profiles, axis):
     return summary
 
 
-def correlation_matrix(profiles, axes, field):
+def correlation_matrix(profiles, axes, field, entry_fn=axis_entry):
     """axis -> other axis -> {r, n} over members with a value for `field` on both axes."""
     matrix = {}
     for a in axes:
@@ -104,7 +115,7 @@ def correlation_matrix(profiles, axes, field):
                 continue
             pairs = []
             for p in profiles:
-                ea, eb = axis_entry(p, a), axis_entry(p, b)
+                ea, eb = entry_fn(p, a), entry_fn(p, b)
                 if ea and eb and ea[field] is not None and eb[field] is not None:
                     pairs.append((ea[field], eb[field]))
             xs, ys = [x for x, _ in pairs], [y for _, y in pairs]
@@ -127,6 +138,14 @@ def build_stats_doc(spec_hash, profiles, axes, current):
             for scale, field in CORRELATION_FIELDS.items()
         },
     }
+    # Only profile sets built with the agreement index get its summaries
+    if any("agreement" in a for p in profiles for a in p.get("axes", {}).values()):
+        doc["agreement_axes"] = {
+            axis: axis_summary(profiles, axis, agreement_entry) for axis in axes
+        }
+        doc["agreement_correlations"] = {
+            "raw": correlation_matrix(profiles, axes, "score", agreement_entry)
+        }
     # Fail loudly if the document drifts from its schema
     AxisStatsDoc.model_validate(doc)
     return doc
@@ -141,6 +160,20 @@ def build_profile_updates(profiles, axes, current_ids, current_stats):
             stats = current_stats["axes"].get(axis)
             z = z_score(entry["score"], stats["mean"], stats["sd"]) if stats else None
             fields[f"axes.{axis}.chamber_z"] = rounded(z, Z_DECIMALS)
+
+            agreement = entry.get("agreement")
+            agreement_stats = (current_stats.get("agreement_axes") or {}).get(axis)
+            if agreement is not None and agreement["score"] is not None:
+                z = (
+                    z_score(
+                        agreement["score"],
+                        agreement_stats["mean"],
+                        agreement_stats["sd"],
+                    )
+                    if agreement_stats
+                    else None
+                )
+                fields[f"axes.{axis}.agreement.chamber_z"] = rounded(z, Z_DECIMALS)
 
         actions.append(
             UpdateOne(

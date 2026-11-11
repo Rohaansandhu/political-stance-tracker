@@ -160,6 +160,12 @@ Options:
 
 Output: legislator_profiles collection
 
+With `--chamber`, only that chamber's roll calls count: a senator who served in the House keeps one member_id, so their House votes are left out of Senate profiles. Each profile has a `caucus` (`party` for D/R, the party an independent caucuses with, from their latest term), which is what the Bayesian party prior and `within_party_z` group by.
+
+Primary-category and `left_right` scores are party-relative: each vote counts its weighted score minus what the member's caucus's average vote on that roll call would have scored, and the score is the caucus's vote-weighted average of that party-line part plus the member's average deviation (`apply_party_relative`, which runs before Bayesian weighting). Members are compared on the same roll calls, so which congresses they served in no longer moves them within their party. The other axes are still plain averages. `top_bills` and `recent_votes` keep each vote's own weighted score.
+
+Every score also gets a nested `agreement` block (the contested-vote agreement index, -1 to +1). Each passage roll call is weighted by how contested it was, `1 - |yea - nay| / (yea + nay)`, and the sum is divided by the most the member could have reached on those votes, so near-unanimous votes no longer compress scores toward 0. It is shrunk toward 0 as if by 5 extra typical votes (`shrink_k`, 5 x the median per-vote weight). It appears on `primary_categories.<name>`, `axes.<id>` (not `institutional`) and `axes.<id>.by_category.<name>`; existing fields are unchanged. The helpers are in `src/utils/agreement_utils.py`.
+
 ### 5. Create Plots
 Uses the legislator_profiles collection to create histograms and boxplots of congress members' data. You must specify the spec_hash of the profiles you want to create plots from. 
 ```bash
@@ -184,6 +190,8 @@ python3 src/create_axis_stats.py [--spec_hash spec_hash]
 ```
 Options:
 - `--spec_hash`: (Optional) only this profile set (defaults to every set that has axes)
+
+It also sets `axes.<id>.agreement.chamber_z` and adds `agreement_axes` / `agreement_correlations` (the same summaries over `agreement.score`) to the `axis_stats` documents.
 
 Rerun it after `calc_member_ideology.py` (which replaces `axes` and so drops `chamber_z`) and whenever the `legislators` collection's `current` flags change (`get_legislators.py --update`). Members need at least 10 bills on an axis to count toward its stats.
 
@@ -217,7 +225,7 @@ python3 src/get_amendments.py [--congress num] [--chamber house|senate] [--bill_
 ```bash
 python3 src/generate_amendment_analysis.py [--bill_ids hamdt858-118 ...] [--numOfBills N] [--mode batch submit --dry_run]
 ```
-3. Build profiles. `--votes amendments` uses amendment votes only, and `--votes combined` uses passage and amendment votes together. Only `substantive` amendments and "agree to" roll calls count.
+3. Build profiles. `--votes amendments` uses amendment votes only, and `--votes combined` uses passage and amendment votes together. Only `substantive` amendments and "agree to" roll calls count. Amendment roll calls count toward the agreement index like passage roll calls, weighted by how contested each was. Afterwards run `create_axis_stats.py`, `create_aggregated_stats.py` and `create_hwyv_cards.py --congresses 116 117 118 119` on the new spec_hash.
 ```bash
 python3 src/calc_amendment_ideology.py --model model --chamber house --votes amendments|combined [--congress num] [--bill_type hr ...]
 ```

@@ -5,7 +5,9 @@ Legislator profiles that use amendment votes, under new spec_hashes.
   --votes combined     passage and amendment votes together (candidate site replacement)
 
 Amendment member votes are built in memory from rollcall_votes and never written to
-member_votes. Everything else reuses calc_member_ideology unchanged.
+member_votes. Everything else reuses calc_member_ideology unchanged. Amendment roll calls
+count toward the agreement index the same way passage roll calls do, weighted by how
+contested each one was.
 
 Usage:
     python3 src/calc_amendment_ideology.py --model gpt-6-luna --chamber house --votes combined
@@ -143,6 +145,14 @@ def build_profiles(args):
 
     extra_votes = build_amendment_votes_by_member(amendment_analyses)
 
+    # Contest weights for the agreement index: amendment roll calls count like passage ones
+    amendment_vote_ids = {r["vote_id"] for votes in extra_votes.values() for r in votes}
+    contest_weights = cmi.load_contest_weights(vote_ids=amendment_vote_ids)
+    party_means = cmi.load_party_vote_means(vote_ids=amendment_vote_ids)
+    if include_db_votes:
+        contest_weights.update(cmi.load_contest_weights(args.congress, args.chamber))
+        party_means.update(cmi.load_party_vote_means(args.congress, args.chamber))
+
     base_spec_hash = cmi.get_spec_hash(
         args.model, args.schema, args.congress, args.chamber, args.bill_type, args.axis_schema
     )
@@ -160,14 +170,18 @@ def build_profiles(args):
         axis_analyses,
         args.axis_schema,
         institutional_scores,
+        contest_weights,
         extra_votes_by_member=extra_votes,
         include_db_votes=include_db_votes,
+        party_means=party_means,
     )
+    profiles = cmi.apply_party_relative(profiles)
 
     profiles = cmi.apply_bayesian_weighting(profiles)
     profiles = cmi.apply_bayesian_weighting(profiles, "axes", skip={cmi.INSTITUTIONAL})
     profiles = cmi.add_within_party_z(profiles)
     profiles = cmi.generate_rankings(profiles)
+    profiles = cmi.apply_agreement(profiles)
 
     for profile in profiles:
         profile["amendment_schema_version"] = amendment_schema

@@ -46,3 +46,10 @@ class AxisStatsDoc(BaseModel):
     #   "party": Pearson r of within_party_z, so members without one (independents,
     #            tiny parties) drop out
     correlations: dict[str, dict[str, dict[str, PairCorrelation]]] = {}
+    # The same two summaries over `agreement.score` (members need `min_bills` contested votes
+    # on the axis). Only present for profile sets built with the agreement index; the only
+    # correlation scale is "raw".
+    agreement_axes: Optional[dict[str, AxisSummary]] = None
+    agreement_correlations: Optional[
+        dict[str, dict[str, dict[str, PairCorrelation]]]
+    ] = None
